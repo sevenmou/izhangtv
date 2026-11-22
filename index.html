@@ -157,21 +157,42 @@
     position:relative;aspect-ratio:16/9;overflow:hidden;
     background:#05070a;
   }
+  /* 封面图：先给骨架扫光占位，图到了再从 blur(14px) 收到清晰（约 700ms） */
   .card .thumb img{
+    position:relative;z-index:1;
     width:100%;height:100%;object-fit:cover;display:block;
-    transition:transform .45s cubic-bezier(.2,.7,.3,1),filter .5s;
-    filter:saturate(.95) brightness(.92);
+    opacity:.2;filter:blur(14px) saturate(.95) brightness(.92);
+    transition:transform .45s cubic-bezier(.2,.7,.3,1),filter .7s ease,opacity .7s ease;
+  }
+  .card .thumb.ok img{
+    opacity:1;filter:blur(0) saturate(.95) brightness(.92);
   }
   .card:hover .thumb img{
     transform:translate3d(var(--ix,0px),var(--iy,0px),0) scale(1.03);
-    filter:saturate(1.08) brightness(1.02);
+    filter:blur(0) saturate(1.08) brightness(1.02);
+  }
+  /* 骨架：灰色占位 + 一道光 1.5s 从左往右匀速扫，图到了淡出 */
+  .card .thumb::before{
+    content:"";position:absolute;inset:0;z-index:0;
+    background:
+      linear-gradient(100deg,transparent 18%,rgba(255,255,255,.2) 44%,rgba(255,255,255,.03) 62%,transparent 86%),
+      linear-gradient(180deg,#0e1622,#070b12);
+    background-size:220% 100%,100% 100%;
+    background-position:150% 0,0 0;
+    animation:sweep 1.5s linear infinite;
+    transition:opacity .42s ease;
+  }
+  .card .thumb.ok::before{opacity:0;animation:none}
+  @keyframes sweep{
+    from{background-position:150% 0,0 0}
+    to{background-position:-70% 0,0 0}
   }
   .card .thumb::after{
-    content:"";position:absolute;inset:0;
+    content:"";position:absolute;inset:0;z-index:2;
     background:linear-gradient(to top,rgba(7,8,11,.92) 2%,rgba(7,8,11,.18) 46%,transparent 72%);
   }
   .card .thumb .play{
-    position:absolute;left:18px;bottom:14px;z-index:2;
+    position:absolute;left:18px;bottom:14px;z-index:3;
     display:inline-flex;align-items:center;gap:8px;
     font-size:12px;letter-spacing:.05em;color:#fff;
     opacity:0;transform:translateY(6px);
@@ -583,6 +604,17 @@ GAMES.forEach((g,i) => {
       <div class="go"><span>${g.sub}</span><span class="arrow">→</span></div>
     </div>`;
   grid.appendChild(card);
+
+  // 封面图到位的瞬间：撤掉骨架扫光，图从模糊收到清晰
+  const thumb = card.querySelector('.thumb');
+  const cover = card.querySelector('.thumb img');
+  const loaded = () => thumb.classList.add('ok');
+  if(cover.complete && cover.naturalWidth){ loaded(); }
+  else{
+    cover.addEventListener('load', loaded, {once:true});
+    cover.addEventListener('error', loaded, {once:true});
+  }
+
   io.observe(card);
 });
 

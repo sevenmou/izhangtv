@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>鹏城暗码 3D · J6 班的最后一课</title>
+<style>
+  :root{
+    --ink:#cfd8da; --dim:#7d9095; --line:#2a3a40; --red:#b6463a; --cyan:#6fa3a8;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#000;overflow:hidden;color:var(--ink);
+    font-family:"Noto Sans SC","Microsoft YaHei","PingFang SC","SimHei",sans-serif;
+    -webkit-font-smoothing:antialiased; user-select:none;}
+  #gl{position:fixed;inset:0;display:block;width:100%;height:100%}
+  #grain{position:fixed;inset:-20%;pointer-events:none;z-index:20;opacity:.16;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+    animation:grainShift .5s steps(4,end) infinite; mix-blend-mode:overlay}
+  @keyframes grainShift{0%{transform:translate(0,0)}25%{transform:translate(-3%,2%)}50%{transform:translate(2%,-3%)}75%{transform:translate(-2%,-1%)}100%{transform:translate(1%,2%)}}
+  #vignette{position:fixed;inset:0;pointer-events:none;z-index:21;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,0) 35%, rgba(0,0,0,.55) 78%, rgba(0,0,0,.92) 100%),
+               repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, rgba(0,0,0,0) 1px 3px);}
+  #hud{position:fixed;inset:0;z-index:30;pointer-events:none}
+  #objective{position:absolute;left:28px;top:24px;max-width:46vw;font-size:13px;letter-spacing:1px;
+    color:#b9c8cb;text-shadow:0 1px 6px #000;line-height:1.7}
+  #objective b{display:block;font-size:10px;letter-spacing:3px;color:#7e9297;margin-bottom:5px;font-weight:500}
+  #objective .done{color:#5f7a63}
+  #items{position:absolute;right:26px;top:22px;text-align:right;font-size:11px;color:#93a7ab;line-height:1.9;letter-spacing:.5px}
+  #items b{display:block;font-size:10px;letter-spacing:3px;color:#6d7f83;margin-bottom:4px;font-weight:500}
+  #crosshair{position:absolute;left:50%;top:50%;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;border-radius:50%;
+    background:rgba(210,222,224,.55);box-shadow:0 0 6px rgba(0,0,0,.8);opacity:.65}
+  #prompt{position:absolute;left:50%;bottom:15%;transform:translateX(-50%);display:none;
+    font-size:13px;letter-spacing:1px;color:#d6e0e2;background:rgba(6,10,12,.72);
+    border:1px solid #2b424a;padding:7px 14px;white-space:nowrap;text-shadow:0 1px 4px #000}
+  #prompt kbd{display:inline-block;min-width:18px;text-align:center;border:1px solid #6d858b;border-radius:3px;
+    padding:1px 5px;margin-right:8px;font-size:11px;color:#bfd2d5;background:#131c20;font-family:inherit}
+  #subtitle{position:absolute;left:50%;bottom:7%;transform:translateX(-50%);width:min(760px,80vw);display:none;
+    background:linear-gradient(180deg,rgba(4,7,9,.0),rgba(4,7,9,.82) 25%,rgba(4,7,9,.82) 100%);
+    padding:18px 26px 16px;border-left:2px solid #3a555c;text-align:left}
+  #subtitle .sp{font-size:11px;letter-spacing:3px;color:#c0846f;margin-bottom:7px}
+  #subtitle .tx{font-size:15px;line-height:1.85;color:#d4dcde;letter-spacing:.6px}
+  #subtitle .nh{font-size:10px;letter-spacing:2px;color:#6d8185;margin-top:9px;text-align:right}
+  #timer{position:absolute;left:50%;top:6%;transform:translateX(-50%);display:none;font-family:monospace;
+    font-size:16px;letter-spacing:3px;color:#d05a4a;background:rgba(20,4,3,.75);border:1px solid #5e211a;
+    padding:8px 18px;text-shadow:0 0 10px rgba(190,60,40,.4)}
+  #timer.warn{animation:tpulse .8s steps(2,end) infinite}
+  @keyframes tpulse{50%{opacity:.45}}
+  #blockHud{position:absolute;left:50%;bottom:58px;transform:translateX(-50%);display:none;z-index:31;
+    font-family:monospace;font-size:10px;letter-spacing:2px;color:#b9cdcf;text-align:center;
+    background:rgba(8,13,15,.58);border:1px solid rgba(112,146,150,.35);padding:4px 12px 5px;min-width:132px;
+    text-shadow:0 0 8px rgba(0,0,0,.8)}
+  #blockHud .lbl{color:#7d9498;font-size:8px;letter-spacing:3px;margin-bottom:2px}
+  #blockHud .bar{width:124px;height:3px;background:rgba(255,255,255,.12);margin-top:4px}
+  #blockBar{display:block;height:100%;width:100%;background:#6f9f95;transition:width .1s}
+  #flash{position:fixed;inset:0;background:#a1190f;opacity:0;pointer-events:none;z-index:40;transition:opacity .12s}
+  #rededge{position:fixed;inset:0;pointer-events:none;z-index:24;opacity:0;transition:opacity .4s;
+    box-shadow:inset 0 0 120px 30px rgba(150,26,18,.65)}
+  #toast{position:absolute;left:50%;top:16%;transform:translateX(-50%);opacity:0;transition:opacity .35s;
+    background:rgba(8,14,16,.9);border:1px solid #355058;padding:9px 18px;font-size:12px;letter-spacing:1px;color:#bfd2d5}
+  #toast.on{opacity:1}
+  #chapterCard{position:fixed;inset:0;z-index:45;display:none;align-items:center;justify-content:center;
+    flex-direction:column;background:rgba(0,0,0,.55);pointer-events:none}
+  #chapterCard .no{font-family:monospace;letter-spacing:8px;font-size:11px;color:#8d6c62}
+  #chapterCard .tt{font-size:38px;letter-spacing:12px;margin:14px 0 8px;color:#e2e7e7;font-weight:300}
+  #chapterCard .st{font-size:12px;letter-spacing:3px;color:#8b9c9f}
+  #chapterCard .ln{width:220px;height:1px;background:linear-gradient(90deg,transparent,#7b8e92,transparent);margin-top:22px}
+
+  /* 开场 / 菜单 */
+  #boot,#menu,#pause,#ending,#endList,#note,#keypad,#phone,#settings,#dead{
+    position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center}
+  #boot{display:flex;background:#020304;flex-direction:column;z-index:60}
+  #boot .logo{font-size:44px;letter-spacing:16px;color:#dbe2e2;font-weight:300}
+  #boot .sub{margin-top:14px;font-size:11px;letter-spacing:5px;color:#6d7f83}
+  #boot .bar{margin-top:46px;width:280px;height:2px;background:#1d272b}
+  #boot .bar i{display:block;height:100%;width:0;background:#6fa3a8;transition:width .3s}
+  #boot .hint{margin-top:16px;font-size:11px;letter-spacing:2px;color:#4e6064}
+  #boot .start{margin-top:40px;display:none}
+  .btn{font-family:inherit;font-size:13px;letter-spacing:2px;color:#c8d4d6;background:rgba(10,16,19,.6);
+    border:1px solid #2c444c;padding:11px 26px;cursor:pointer;transition:all .15s}
+  .btn:hover{background:rgba(24,38,42,.85);border-color:#5b848c;color:#eef4f5}
+  .btn.danger:hover{border-color:#8a3a30;color:#e7b6ac;background:rgba(40,12,10,.7)}
+  #menu{background:radial-gradient(ellipse at 50% 40%, rgba(5,9,11,.35), rgba(0,0,0,.9) 70%)}
+  #menu .wrap{text-align:center}
+  #menu .kicker{font-family:monospace;font-size:10px;letter-spacing:6px;color:#7f5d54}
+  #menu h1{margin:16px 0 6px;font-size:64px;letter-spacing:22px;font-weight:300;color:#e5eaea;
+    text-shadow:0 0 40px rgba(120,170,180,.18)}
+  #menu .en{font-size:10px;letter-spacing:4px;color:#5f7276;margin-bottom:34px}
+  #menu .opts{display:flex;flex-direction:column;gap:10px;align-items:center}
+  #menu .opts .btn{width:280px}
+  #menu .foot{position:absolute;bottom:26px;left:0;right:0;font-size:10px;letter-spacing:2px;color:#42535a;text-align:center}
+  #menu .warn{font-size:10px;letter-spacing:2px;color:#6b5650;margin-top:26px}
+
+  .panelBg{position:absolute;inset:0;background:rgba(2,4,5,.82);backdrop-filter:blur(3px);z-index:0}
+  #pause .box,#endList .box,#settings .box{position:relative;z-index:2}
+  .panel{position:relative;background:#0b1114;border:1px solid #2a3f46;box-shadow:0 24px 80px rgba(0,0,0,.7);padding:26px 28px}
+  .panel h2{margin:0 0 4px;font-size:20px;letter-spacing:5px;font-weight:400;color:#dbe3e3}
+  .panel .ph{font-size:10px;letter-spacing:2px;color:#6f8286;margin-bottom:18px}
+
+  /* 纸条 */
+  #note .paper{width:min(560px,86vw);max-height:76vh;overflow:auto;background:#cfc7b2;color:#22241f;
+    padding:34px 40px;box-shadow:0 30px 90px rgba(0,0,0,.8);position:relative;
+    background-image:linear-gradient(180deg,rgba(120,100,60,.10),transparent 30%),radial-gradient(circle at 80% 80%,rgba(90,70,40,.16),transparent 60%)}
+  #note .paper h3{margin:0 0 18px;font-size:19px;letter-spacing:2px;font-weight:600;color:#26251f}
+  #note .paper p{margin:0 0 14px;font-size:14px;line-height:2;letter-spacing:.4px;white-space:pre-wrap}
+  #note .paper .sig{font-size:12px;color:#5a5346;text-align:right;margin-top:22px}
+  #note .cl{position:absolute;right:26px;bottom:18px;font-size:11px;letter-spacing:2px;color:#7a7261}
+
+  /* 键盘 */
+  #keypad .box{width:min(420px,88vw);background:#0a1115;border:1px solid #2f4a52;padding:24px}
+  #keypad .hd{font-family:monospace;font-size:11px;letter-spacing:2px;color:#7f959a}
+  #keypad .disp{margin:16px 0 6px;height:64px;border:1px solid #274049;background:#050a0c;display:flex;
+    align-items:center;justify-content:center;gap:14px;font-family:monospace;font-size:30px;letter-spacing:8px;color:#7fd8b0}
+  #keypad .disp.bad{color:#d45a4a}
+  #keypad .sub{font-size:10px;letter-spacing:1px;color:#6b7f83;text-align:center;margin-bottom:14px}
+  #keypad .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  #keypad .grid button{height:52px;font-size:18px;font-family:monospace;background:#111b1f;border:1px solid #2a454d;
+    color:#c9d6d8;cursor:pointer}
+  #keypad .grid button:hover{background:#1b2b30;border-color:#527a84}
+  #keypad .grid button.wide{font-size:12px;letter-spacing:2px}
+  #keypad .grid button.ok{border-color:#356a4f;color:#8fe0b0}
+
+  /* 手机 */
+  #phone{display:none;background:rgba(0,0,0,.55);backdrop-filter:blur(2px)}
+  #phone .ph{width:min(340px,86vw);background:#0c1412;border:1px solid #24413a;border-radius:22px;padding:18px 16px 26px;
+    box-shadow:0 30px 80px rgba(0,0,0,.8)}
+  #phone .time{font-size:32px;font-weight:300;letter-spacing:2px;color:#cfe6dc;text-align:center}
+  #phone .meta{font-size:10px;color:#5f7f74;text-align:center;letter-spacing:1px;margin-top:4px}
+  #phone .msg{margin-top:16px;border-top:1px solid #1c332c;padding-top:12px;font-size:12px;line-height:1.8;color:#a9c4bb}
+  #phone .from{font-size:10px;color:#6d8f84;letter-spacing:1px;margin-bottom:4px}
+  #phone .row{margin-bottom:10px}
+  #phone .hint{margin-top:18px;text-align:center;font-size:10px;color:#5f7f74;letter-spacing:2px}
+
+  /* 死亡 */
+  #dead{background:#140404;flex-direction:column;text-align:center}
+  #dead .t1{font-size:40px;letter-spacing:14px;color:#e0d3d0;font-weight:300}
+  #dead .t2{margin-top:18px;font-size:12px;letter-spacing:3px;color:#a06b62;max-width:520px;line-height:2}
+  #dead .btn{margin-top:36px}
+
+  /* 结局 */
+  #ending{background:radial-gradient(ellipse at center,rgba(8,10,11,.9),#000 75%)}
+  #ending.dawn{background:radial-gradient(ellipse at center,rgba(10,16,18,.42),rgba(1,2,3,.9) 78%)}
+  #ending .wrap{text-align:center;max-width:680px}
+  #ending .no{font-family:monospace;font-size:10px;letter-spacing:8px;color:#8a6a5f}
+  #ending h1{margin:18px 0 10px;font-size:44px;letter-spacing:10px;font-weight:300;color:#eceeee}
+  #ending .sub{font-size:12px;letter-spacing:4px;color:#96a7a9}
+  #ending .desc{margin:30px auto 0;font-size:13px;line-height:2.2;letter-spacing:1px;color:#8b9c9f;max-width:460px}
+  #ending .acts{margin-top:40px;display:flex;gap:12px;justify-content:center}
+  #endList{background:rgba(2,4,5,.9)}
+  #endList .box{width:min(720px,90vw);max-height:82vh;overflow:auto;background:#0a0f12;border:1px solid #263a41;padding:28px 30px}
+  #endList .item{border-left:2px solid #24363c;padding:12px 16px;margin-bottom:10px}
+  #endList .item.on{border-left-color:#8d4a3c}
+  #endList .n{font-family:monospace;font-size:10px;letter-spacing:3px;color:#7d6a63}
+  #endList .nm{font-size:16px;letter-spacing:2px;margin:4px 0;color:#dbe3e3}
+  #endList .ds{font-size:12px;color:#7f9296;line-height:1.9}
+
+  /* 设置 */
+  #settings .box{width:min(460px,90vw);background:#0a0f12;border:1px solid #263a41;padding:26px 28px}
+  #settings .row{display:flex;align-items:center;justify-content:space-between;margin:16px 0;font-size:12px;letter-spacing:1px;color:#c9d8da}
+  #settings input[type=range]{width:190px;accent-color:#5f9aa0}
+  #settings select{background:#111b1f;color:#c8d6d8;border:1px solid #2b444c;padding:5px 8px;font-family:inherit}
+  #settings .acts{margin-top:22px;display:flex;justify-content:flex-end}
+
+  #pause .box{text-align:center}
+  #pause .box .btn{display:block;width:240px;margin:9px auto}
+  .fade{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:55;transition:opacity .45s}
+  .fade.on{opacity:1}
+  #hintbar{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:26;display:none;
+    background:rgba(3,5,6,.78);border:1px solid #2b4046;padding:14px 22px;font-size:12px;letter-spacing:2px;color:#c4d2d4;line-height:2}
+  #lockHint{position:absolute;left:50%;bottom:30px;transform:translateX(-50%);display:none;font-size:11px;
+    letter-spacing:2px;color:#7f9498;background:rgba(0,0,0,.6);padding:8px 14px;border:1px solid #24383e}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="vignette"></div>
+<div id="rededge"></div>
+<div id="flash"></div>
+<div id="grain"></div>
+
+<div id="hud">
+  <div id="objective"><b>当前目标</b><span id="objText">查看手机</span></div>
+  <div id="items"><b>随身物品</b><span id="itemText">无</span></div>
+  <div id="crosshair"></div>
+  <div id="prompt"><kbd>E</kbd><span id="promptText"></span></div>
+  <div id="subtitle"><div class="sp" id="subSp"></div><div class="tx" id="subTx"></div><div class="nh">E / 空格 继续</div></div>
+  <div id="timer">00:00</div>
+  <div id="toast"></div>
+  <div id="hintbar"></div>
+  <div id="lockHint">点击画面锁定鼠标 · WASD 移动 · Shift 跑 · E 交互</div>
+  <div id="blockHud"><div class="lbl">格挡 · 冷却 20s</div><div id="blockCd">Q · 格挡</div><div class="bar"><i id="blockBar"></i></div></div>
+</div>
+
+<div id="chapterCard">
+  <div class="no" id="chNo"></div>
+  <div class="tt" id="chTitle"></div>
+  <div class="st" id="chSub"></div>
+  <div class="ln"></div>
+</div>
+
+<div id="boot">
+  <div class="logo">鹏城暗码</div>
+  <div class="sub">J6 班的最后一课 · 3D</div>
+  <div class="bar"><i id="bootBar"></i></div>
+  <div class="hint" id="bootHint">正在加载场景…</div>
+  <button class="btn start" id="bootStart">进入教学楼</button>
+</div>
+
+<div id="menu">
+  <div class="wrap">
+    <div class="kicker">PENGCHENG · CAMPUS ARCHIVE</div>
+    <h1>鹏城暗码</h1>
+    <div class="en">J6 班的最后一课 / 3D FIRST PERSON</div>
+    <div class="opts">
+      <button class="btn" id="btnNew">开始补训</button>
+      <button class="btn" id="btnContinue" style="display:none">继续补训</button>
+      <button class="btn" id="btnEndings">结局收录</button>
+      <button class="btn" id="btnSettings">终端设置</button>
+    </div>
+    <div class="warn">建议佩戴耳机 · 关灯游玩 · 有追逐与惊吓内容</div>
+  </div>
+  <div class="foot">WASD 移动 / Shift 奔跑 / E 交互 / F 手电 / Esc 暂停</div>
+</div>
+
+<div id="note">
+  <div class="paper"><h3 id="noteTitle"></h3><div id="noteBody"></div><div class="sig" id="noteSig"></div><div class="cl">E / 点击关闭</div></div>
+</div>
+
+<div id="keypad">
+  <div class="box">
+    <div class="hd">[ 门禁终端 / ACCESS CONTROL ]</div>
+    <div class="disp" id="kpDisp">____</div>
+    <div class="sub" id="kpSub">请输入四位密码</div>
+    <div class="grid" id="kpGrid"></div>
+  </div>
+</div>
+
+<div id="phone">
+  <div class="ph">
+    <div class="time">22:45</div>
+    <div class="meta">电量 3% · 充电中</div>
+    <div class="msg">
+      <div class="row"><div class="from">班群（22:31）· 梁老师</div>@全体成员 补训任务未完成的同学，请留在工位等待复核。</div>
+      <div class="row"><div class="from">梁老师（22:38）· 私聊</div>锦鑫，门锁了别走正门。密码我拆成四段，散在你桌上和墙上。别在走廊里跑。</div>
+    </div>
+    <div class="hint">点击关闭</div>
+  </div>
+</div>
+
+<div id="pause">
+  <div class="panelBg"></div>
+  <div class="panel box">
+    <h2>已暂停</h2>
+    <div class="ph">补训仍在继续</div>
+    <button class="btn" id="btnResume">回到机房</button>
+    <button class="btn danger" id="btnRestart">重新开始本章</button>
+    <button class="btn" id="btnQuit">返回主菜单</button>
+  </div>
+</div>
+
+<div id="dead">
+  <div class="t1">补训超时</div>
+  <div class="t2" id="deadText">系统检测到你已离开工位。<br>正在把你放回最近一次打卡的位置。</div>
+  <button class="btn" id="btnDead">继续</button>
+</div>
+
+<div id="ending">
+  <div class="wrap">
+    <div class="no" id="endNo">ENDING 03</div>
+    <h1 id="endTitle">真相结局</h1>
+    <div class="sub" id="endSub">被保留的一节课</div>
+    <div class="desc" id="endDesc"></div>
+    <div class="acts">
+      <button class="btn" id="btnEndMenu">返回主菜单</button>
+      <button class="btn" id="btnEndAgain">再走一次</button>
+    </div>
+  </div>
+</div>
+
+<div id="endList">
+  <div class="panelBg"></div>
+  <div class="box">
+    <h2>结局收录</h2>
+    <div class="ph">每一次走到尽头，都会被归档在这里</div>
+    <div id="endItems"></div>
+    <div style="margin-top:18px;text-align:right"><button class="btn" id="btnEndListBack">返回</button></div>
+  </div>
+</div>
+
+<div id="settings">
+  <div class="panelBg"></div>
+  <div class="box">
+    <h2>终端设置</h2>
+    <div class="ph">SETTINGS</div>
+    <div class="row"><span>鼠标灵敏度</span><input id="setSens" type="range" min="0.4" max="2.4" step="0.05" value="1"><span id="setSensV">1.00</span></div>
+    <div class="row"><span>画面亮度</span><input id="setExp" type="range" min="0.6" max="1.8" step="0.05" value="1"><span id="setExpV">1.00</span></div>
+    <div class="row"><span>音量</span><input id="setVol" type="range" min="0" max="1" step="0.05" value="0.78"><span id="setVolV">0.78</span></div>
+    <div class="row"><span>画质</span>
+      <select id="setQual"><option value="high">高（阴影 + 高精度）</option><option value="mid" selected>中（推荐）</option><option value="low">低（老显卡）</option></select>
+    </div>
+    <div class="acts"><button class="btn" id="btnSetBack">返回</button></div>
+  </div>
+</div>
+
+<div class="fade" id="fade"></div>
+
+<script src="three.min.js" charset="utf-8"></script>
+<script src="js/textures.js" charset="utf-8"></script>
+<script src="js/audio.js" charset="utf-8"></script>
+<script src="js/level.js" charset="utf-8"></script>
+<script src="js/game.js" charset="utf-8"></script>
+</body>
+</html>

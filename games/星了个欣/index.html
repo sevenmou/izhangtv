@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>星了个欣</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;margin:0}
+  body{
+    background:radial-gradient(1100px 700px at 50% -12%, #161d2a 0%, #07080b 58%) fixed, #07080b;
+    color:#eceff5;
+    font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    display:grid;place-items:center;
+    overflow:hidden;user-select:none;
+  }
+  .app{width:100%;max-width:660px;padding:12px 14px;display:flex;flex-direction:column;gap:9px}
+  .top{display:flex;align-items:center;gap:10px}
+  .top .box{
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);
+    border-radius:12px;padding:7px 11px;display:flex;align-items:baseline;gap:7px;
+  }
+  .top .box span{font-size:11px;color:#8a93a4;letter-spacing:.08em}
+  .top .box b{font-size:19px;font-variant-numeric:tabular-nums;color:#74f0d8;font-weight:700}
+  .top .box.best b{color:#ff8fd0}
+  .title{flex:1;min-width:0;line-height:1.15}
+  .title h1{margin:0;font-size:17px;font-weight:800;letter-spacing:.02em}
+  .title p{margin:2px 0 0;font-size:10.5px;color:#5c6575;letter-spacing:.1em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .btn{
+    appearance:none;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);
+    color:#dfe4ec;font-size:12px;padding:8px 12px;border-radius:10px;cursor:pointer;
+    font-family:inherit;transition:background .2s,border-color .2s,transform .2s;
+  }
+  .btn:hover{background:rgba(255,255,255,.1);border-color:rgba(116,240,216,.5)}
+  .btn:active{transform:scale(.96)}
+
+  .stage{
+    position:relative;margin:0 auto;
+    width:min(100%, 620px, calc((100dvh - 140px) * 420 / 560));
+    aspect-ratio:420/560;
+  }
+  .field{
+    position:absolute;left:0;top:0;width:420px;height:560px;
+    transform-origin:top left;
+  }
+  /* 牌 */
+  .tile{
+    position:absolute;width:58px;height:58px;
+    border-radius:11px;overflow:hidden;
+    border:2px solid rgba(0,0,0,.5);
+    background:#0d1117;
+    box-shadow:0 6px 14px -4px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.13) inset;
+    transition:left .34s cubic-bezier(.3,.9,.3,1), top .34s cubic-bezier(.3,.9,.3,1),
+               width .2s ease, height .2s ease, filter .25s, box-shadow .25s, transform .2s;
+    cursor:pointer;
+  }
+  .tile img{width:100%;height:100%;object-fit:cover;display:block}
+  .tile{
+    box-shadow:0 6px 14px -4px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.2) inset, 0 0 16px -6px rgba(116,240,216,.5);
+  }
+  .tile.blocked{
+    filter:brightness(.5) saturate(.8);
+    border-color:rgba(255,255,255,.07);
+    box-shadow:0 2px 6px -3px rgba(0,0,0,.9);
+    cursor:default;
+    pointer-events:none;
+  }
+  .tile:not(.blocked):active{transform:scale(.94)}
+  .tile.pop{transform:scale(1.25);opacity:0;transition:transform .26s ease,opacity .26s ease;pointer-events:none}
+
+  .slot{
+    position:absolute;width:50px;height:50px;border-radius:10px;
+    border:1px dashed rgba(255,255,255,.16);
+    background:rgba(255,255,255,.03);
+  }
+  .hint{
+    position:absolute;left:0;right:0;text-align:center;
+    font-size:12px;color:#5c6575;letter-spacing:.04em;
+  }
+
+  .over{
+    position:absolute;inset:0;border-radius:18px;
+    background:rgba(4,6,10,.4);backdrop-filter:blur(2px);
+    display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+    text-align:center;padding:22px;z-index:400;
+  }
+  .over.on{display:flex;animation:fadeIn .3s ease}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  .over .panel{
+    width:302px;padding:26px 22px 22px;border-radius:18px;text-align:center;
+    background:linear-gradient(180deg, #141a24 0%, #0b0e14 100%);
+    border:1px solid rgba(255,255,255,.1);
+    box-shadow:0 30px 70px -22px rgba(0,0,0,.95), 0 0 0 1px rgba(116,240,216,.08) inset;
+    animation:rise .32s cubic-bezier(.2,.9,.3,1);
+  }
+  @keyframes rise{from{transform:translateY(14px) scale(.96);opacity:0}to{transform:none;opacity:1}}
+  .over h2{margin:0 0 6px;font-size:21px;font-weight:800}
+  .over p{margin:0 0 12px;font-size:12px;color:#8a93a4;line-height:1.7}
+  .over .btn{padding:11px 22px;font-size:13px;border-color:rgba(116,240,216,.45);color:#bff7ea}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="title">
+      <h1>星了个欣</h1>
+      <p>XING LE GE XIN · 三消叠叠乐</p>
+    </div>
+    <div class="box"><span>剩</span><b id="left">72</b></div>
+    <div class="box best"><span>已消</span><b id="cleared">0</b></div>
+    <button class="btn" id="restart">重开</button>
+  </div>
+
+  <div class="stage">
+    <div class="field" id="field"></div>
+    <div class="over" id="over">
+      <div class="panel">
+        <h2 id="overTitle">槽位满了</h2>
+        <p id="overText"></p>
+        <button class="btn" id="again">再来一局</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ---------- 参数 ---------- */
+const W = 420, H = 560;
+const SIZE = 58, STEP = 64;
+const SLOT = 50, SLOT_GAP = 6;
+const SLOT_Y = 440;
+const SLOT_COUNT = 7;
+const TYPES = 6;
+const GROUPS = 24;                       // 24 组 × 3 张 = 72 张
+const CLEAR_AREA = 1500;                  // 遮挡判定阈值（覆盖 900px² 即算压住）
+
+const LAYERS = [
+  { cols: 6, rows: 5 },
+  { cols: 5, rows: 4 },
+  { cols: 4, rows: 3 },
+  { cols: 3, rows: 2 },
+  { cols: 2, rows: 2 }
+];
+const TWEAK = [[0,0],[12,-10],[-12,12],[14,14],[-10,-14]];
+
+const stage = document.querySelector('.stage');
+const field = document.getElementById('field');
+const $left = document.getElementById('left');
+const $cleared = document.getElementById('cleared');
+const $over = document.getElementById('over');
+const $overTitle = document.getElementById('overTitle');
+const $overText = document.getElementById('overText');
+
+/* ---------- 状态 ---------- */
+let cards = [];
+let slots = [];
+let cleared = 0;
+let over = false;
+let locked = false;
+
+/* ---------- 音效 ---------- */
+let actx = null;
+function beep(freq, dur, gain){
+  try{
+    if(!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = actx.createOscillator(), gn = actx.createGain();
+    o.frequency.value = freq; o.type = 'sine';
+    gn.gain.value = gain;
+    gn.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + dur);
+    o.connect(gn); gn.connect(actx.destination);
+    o.start(); o.stop(actx.currentTime + dur);
+  }catch(e){}
+}
+
+/* ---------- 自适应缩放 ---------- */
+function fit(){
+  const w = stage.getBoundingClientRect().width || 420;
+  field.style.transform = 'scale(' + (w / W).toFixed(4) + ')';
+}
+addEventListener('resize', fit);
+
+/* ---------- 布局生成 ---------- */
+function shuffle(a){
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+
+function buildPositions(){
+  const baseH = LAYERS[0].rows * STEP - (STEP - SIZE);
+  const list = [];
+  LAYERS.forEach((L, k) => {
+    const w = L.cols * STEP - (STEP - SIZE);
+    const h = L.rows * STEP - (STEP - SIZE);
+    const x0 = Math.round((W - w) / 2) + TWEAK[k][0];
+    const y0 = Math.round(50 + (baseH - h) / 2) + TWEAK[k][1];
+    for(let r = 0; r < L.rows; r++){
+      for(let c = 0; c < L.cols; c++){
+        list.push({
+          x: x0 + c * STEP,
+          y: y0 + r * STEP,
+          z: k
+        });
+      }
+    }
+  });
+  return list;
+}
+
+/* ---------- 新局 ---------- */
+function newGame(){
+  over = false; locked = false;
+  cleared = 0; slots = [];
+  $over.classList.remove('on');
+  $cleared.textContent = '0';
+
+  field.innerHTML = '';
+  cards = [];
+
+  // 槽位底框
+  const slotW = SLOT_COUNT * SLOT + (SLOT_COUNT - 1) * SLOT_GAP;
+  const slotX0 = Math.round((W - slotW) / 2);
+  for(let i = 0; i < SLOT_COUNT; i++){
+    const s = document.createElement('div');
+    s.className = 'slot';
+    s.style.left = (slotX0 + i * (SLOT + SLOT_GAP)) + 'px';
+    s.style.top = SLOT_Y + 'px';
+    field.appendChild(s);
+  }
+
+  // 提示
+  const hint = document.createElement('div');
+  hint.className = 'hint';
+  hint.style.top = (SLOT_Y + SLOT + 26) + 'px';
+  hint.textContent = '暗的说明被压着 · 三张一样的自动消';
+  field.appendChild(hint);
+
+  // 牌面类型：24 组，每组 3 张同款
+  const deck = [];
+  for(let g = 0; g < GROUPS; g++){
+    const t = g % TYPES;
+    deck.push(t, t, t);
+  }
+  shuffle(deck);
+
+  const pos = buildPositions();     // 按层从低到高排好
+  const n = Math.min(deck.length, pos.length);
+
+  for(let i = 0; i < n; i++){
+    const p = pos[i];
+    const t = deck[i];
+    const el = document.createElement('div');
+    el.className = 'tile';
+    el.style.left = p.x + 'px';
+    el.style.top = p.y + 'px';
+    el.style.zIndex = String(10 + p.z * 20 + i);
+    el.style.borderColor = 'rgba(255,255,255,.14)';
+    const img = document.createElement('img');
+    img.src = (t + 1) + '.jpg';
+    img.alt = '';
+    img.draggable = false;
+    el.appendChild(img);
+    field.appendChild(el);
+
+    const card = { t, x: p.x, y: p.y, z: p.z, el, gone: false, blocked: false };
+    el.addEventListener('pointerdown', ev => { ev.preventDefault(); pick(card); });
+    cards.push(card);
+  }
+
+  updateBlocked();
+  updateHUD();
+}
+
+/* ---------- 遮挡判定 ---------- */
+function updateBlocked(){
+  const live = cards.filter(c => !c.gone);
+  for(const c of live){
+    let blocked = false;
+    for(const o of live){
+      if(o === c || o.z <= c.z) continue;
+      const ovx = Math.min(c.x + SIZE, o.x + SIZE) - Math.max(c.x, o.x);
+      const ovy = Math.min(c.y + SIZE, o.y + SIZE) - Math.max(c.y, o.y);
+      if(ovx > 0 && ovy > 0 && ovx * ovy > CLEAR_AREA){ blocked = true; break; }
+    }
+    c.blocked = blocked;
+    c.el.classList.toggle('blocked', blocked);
+  }
+}
+
+/* ---------- 槽位排布 ---------- */
+function layoutSlots(){
+  slots.sort((a, b) => a.t - b.t);
+  const slotW = SLOT_COUNT * SLOT + (SLOT_COUNT - 1) * SLOT_GAP;
+  const slotX0 = Math.round((W - slotW) / 2);
+  slots.forEach((c, i) => {
+    c.el.style.left = (slotX0 + i * (SLOT + SLOT_GAP)) + 'px';
+    c.el.style.top = SLOT_Y + 'px';
+    c.el.style.width = SLOT + 'px';
+    c.el.style.height = SLOT + 'px';
+    c.el.style.zIndex = String(200 + i);
+    c.el.style.borderColor = 'rgba(116,240,216,.5)';
+    c.el.style.boxShadow = '0 0 14px -4px rgba(116,240,216,.55)';
+  });
+}
+
+/* ---------- 点牌 ---------- */
+function pick(card){
+  if(over || locked) return;
+  if(card.gone || card.blocked) return;
+  if(slots.length >= SLOT_COUNT) return;
+
+  card.gone = true;
+  card.el.style.pointerEvents = 'none';
+  slots.push(card);
+  beep(300 + card.t * 24, 0.08, 0.03);
+
+  layoutSlots();
+  updateBlocked();
+  updateHUD();
+
+  if(!resolve()){
+    if(slots.length >= SLOT_COUNT) lose();
+  }
+}
+
+/* 消三连；有消除则返回 true */
+function resolve(){
+  for(let t = 0; t < TYPES; t++){
+    const same = slots.filter(s => s.t === t);
+    if(same.length >= 3){
+      const three = same.slice(0, 3);
+      for(const s of three){
+        s.el.classList.add('pop');
+        const el = s.el;
+        setTimeout(() => el.remove(), 300);
+      }
+      slots = slots.filter(s => three.indexOf(s) === -1);
+      cleared += 1;
+      beep(560, 0.2, 0.06);
+      if(slots.length) layoutSlots();
+      updateHUD();
+      setTimeout(() => {
+        if(!over && resolve()) return;
+        checkWin();
+      }, 220);
+      return true;
+    }
+  }
+  return false;
+}
+
+function checkWin(){
+  if(over) return;
+  if(cards.every(c => c.gone)){
+    over = true;
+    $overTitle.textContent = '全清！';
+    $overText.textContent = '24 组三张牌全消完，一张没剩';
+    $over.classList.add('on');
+    beep(880, 0.5, 0.09);
+  }
+}
+
+function lose(){
+  if(over) return;
+  over = true;
+  const rest = cards.filter(c => !c.gone).length;
+  $overTitle.textContent = '槽位满了';
+  $overText.textContent = '还剩 ' + rest + ' 张没消，已消 ' + cleared + ' 组';
+  $over.classList.add('on');
+  beep(150, 0.5, 0.08);
+}
+
+function updateHUD(){
+  const rest = cards.filter(c => !c.gone).length;
+  $left.textContent = String(rest);
+  $cleared.textContent = String(cleared);
+}
+
+/* ---------- 启动 ---------- */
+document.getElementById('restart').addEventListener('click', () => { newGame(); fit(); });
+document.getElementById('again').addEventListener('click', () => { newGame(); fit(); });
+addEventListener('keydown', e => { if(e.key === 'r' || e.key === 'R') newGame(); });
+
+newGame();
+fit();
+setTimeout(fit, 60);
+
+})();
+</script>
+</body>
+</html>

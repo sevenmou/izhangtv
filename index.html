@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>i张TV · 张星星粉丝后援团</title>
+<meta name="description" content="i张TV —— 张星星粉丝后援团，恐怖解谜、张可梦图鉴、抽卡收藏集、校园 galgame、PvZ 改版都在这里。">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Serif+SC:wght@600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap">
+<style>
+  :root{
+    --bg:#07080b;
+    --panel:#0e1117;
+    --panel2:#12161f;
+    --line:rgba(255,255,255,.08);
+    --line-2:rgba(255,255,255,.14);
+    --ink:#eceff5;
+    --dim:#8a93a4;
+    --dim2:#5c6575;
+    --cyan:#74f0d8;
+    --pink:#ff6f92;
+    --gold:#f7c66b;
+    --blue:#7aa7ff;
+    --serif:"Noto Serif SC","Songti SC","STSong",serif;
+    --sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-weight:400;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  body::before{
+    content:"";
+    position:fixed;inset:0;z-index:-2;
+    background:
+      radial-gradient(900px 500px at 12% -6%, rgba(116,240,216,.13), transparent 60%),
+      radial-gradient(800px 520px at 92% 4%, rgba(255,111,146,.11), transparent 62%),
+      radial-gradient(700px 700px at 50% 110%, rgba(122,167,255,.10), transparent 60%),
+      var(--bg);
+  }
+  body::after{
+    content:"";
+    position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background-image:
+      linear-gradient(rgba(255,255,255,.028) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.028) 1px, transparent 1px);
+    background-size:64px 64px;
+    mask-image:radial-gradient(circle at 50% 20%, #000 0%, transparent 78%);
+    -webkit-mask-image:radial-gradient(circle at 50% 20%, #000 0%, transparent 78%);
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:0 26px}
+
+  /* ===== 顶部 ===== */
+  header.top{padding:64px 0 34px;border-bottom:1px solid var(--line)}
+  .brand{
+    display:flex;align-items:center;gap:12px;
+    font-size:12px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--dim2);font-weight:500;
+  }
+  .brand .dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--cyan);
+    box-shadow:0 0 12px var(--cyan),0 0 26px rgba(116,240,216,.5);
+    animation:pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:.55;transform:scale(.9)}50%{opacity:1;transform:scale(1.15)}}
+  .brand .zh{letter-spacing:.03em;color:var(--dim);font-size:13px;font-weight:500}
+
+  .hero{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    gap:36px;margin-top:26px;flex-wrap:wrap;
+  }
+  h1{
+    font-family:var(--serif);
+    font-weight:900;
+    font-size:clamp(38px,6.2vw,68px);
+    line-height:1.04;
+    letter-spacing:-.02em;
+    margin:0;
+  }
+  h1 em{
+    font-style:normal;
+    background:linear-gradient(100deg,var(--cyan),#bfeaff 40%,var(--pink));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .lede{
+    margin:18px 0 0;max-width:36em;
+    color:var(--dim);font-size:15px;line-height:1.9;font-weight:300;
+  }
+  .lede b{color:var(--ink);font-weight:500}
+
+  .stats{display:flex;gap:34px;padding-bottom:6px}
+  .stat b{
+    display:block;font-family:var(--serif);font-size:30px;font-weight:700;
+    color:var(--ink);line-height:1;
+  }
+  .stat span{display:block;margin-top:8px;font-size:11px;letter-spacing:.16em;color:var(--dim2)}
+
+  /* ===== 工具条 ===== */
+  .bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:24px 0 0}
+  .chip{
+    appearance:none;cursor:pointer;
+    background:transparent;color:var(--dim);
+    border:1px solid var(--line);border-radius:999px;
+    padding:8px 16px;font-family:var(--sans);font-size:13px;
+    transition:.22s ease;
+  }
+  .chip:hover{color:var(--ink);border-color:var(--line-2);background:rgba(255,255,255,.03)}
+  .chip.on{
+    color:#06120f;background:var(--cyan);border-color:var(--cyan);
+    font-weight:500;box-shadow:0 0 22px rgba(116,240,216,.28);
+  }
+  .bar .grow{flex:1}
+  .btn-random{
+    appearance:none;cursor:pointer;
+    display:inline-flex;align-items:center;gap:9px;
+    background:rgba(255,255,255,.04);color:var(--ink);
+    border:1px solid var(--line-2);border-radius:999px;
+    padding:9px 18px;font-family:var(--sans);font-size:13px;
+    transition:.22s ease;
+  }
+  .btn-random:hover{background:rgba(255,255,255,.09);transform:translateY(-1px)}
+  .btn-random .dice{color:var(--gold)}
+
+  /* ===== 卡片网格 ===== */
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+    gap:22px;
+    padding:26px 0 10px;
+  }
+  .card{
+    position:relative;
+    z-index:2;
+    display:flex;flex-direction:column;
+    background:linear-gradient(170deg,var(--panel2),var(--panel));
+    border:1px solid var(--line);
+    border-radius:16px;
+    overflow:hidden;
+    text-decoration:none;color:inherit;
+    transition:transform .35s cubic-bezier(.2,.7,.3,1),border-color .35s,box-shadow .35s;
+    opacity:0;transform:translateY(18px);
+  }
+  .card.in{opacity:1;transform:none}
+  .card:hover{
+    transform:translateY(-6px);
+    border-color:color-mix(in srgb, var(--c) 55%, transparent);
+    box-shadow:0 18px 44px -18px rgba(0,0,0,.9), 0 0 0 1px color-mix(in srgb,var(--c) 22%, transparent);
+  }
+  .card .thumb{
+    position:relative;aspect-ratio:16/9;overflow:hidden;
+    background:#05070a;
+  }
+  .card .thumb img{
+    width:100%;height:100%;object-fit:cover;display:block;
+    transition:transform .45s cubic-bezier(.2,.7,.3,1),filter .5s;
+    filter:saturate(.95) brightness(.92);
+  }
+  .card:hover .thumb img{
+    transform:translate3d(var(--ix,0px),var(--iy,0px),0) scale(1.03);
+    filter:saturate(1.08) brightness(1.02);
+  }
+  .card .thumb::after{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(to top,rgba(7,8,11,.92) 2%,rgba(7,8,11,.18) 46%,transparent 72%);
+  }
+  .card .thumb .play{
+    position:absolute;left:18px;bottom:14px;z-index:2;
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:12px;letter-spacing:.05em;color:#fff;
+    opacity:0;transform:translateY(6px);
+    transition:.3s ease;
+  }
+  .card:hover .thumb .play{opacity:1;transform:none}
+  .card .thumb .play i{
+    width:26px;height:26px;border-radius:50%;
+    display:grid;place-items:center;
+    background:var(--c);color:#06120f;font-style:normal;font-size:11px;
+    box-shadow:0 0 18px color-mix(in srgb,var(--c) 60%, transparent);
+  }
+  .badge{
+    position:absolute;right:14px;top:13px;z-index:2;
+    font-size:10px;letter-spacing:.16em;
+    padding:5px 9px;border-radius:6px;
+    color:var(--c);
+    background:rgba(6,8,11,.62);
+    border:1px solid color-mix(in srgb,var(--c) 40%, transparent);
+    backdrop-filter:blur(8px);
+  }
+  .body{padding:18px 20px 20px;display:flex;flex-direction:column;gap:10px;flex:1}
+  .title-row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .card h2{
+    font-family:var(--serif);font-size:20px;font-weight:700;margin:0;
+    letter-spacing:-.01em;line-height:1.3;
+  }
+  .card .en{
+    font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim2);
+  }
+  .card p{
+    margin:0;color:var(--dim);font-size:13px;line-height:1.85;
+    font-weight:300;
+  }
+  .tags{display:flex;gap:7px;flex-wrap:wrap;margin-top:2px}
+  .tags span{
+    font-size:11px;color:var(--dim2);
+    border:1px solid var(--line);border-radius:5px;
+    padding:3px 8px;
+  }
+  .card .go{
+    margin-top:auto;padding-top:14px;border-top:1px solid var(--line);
+    display:flex;align-items:center;justify-content:space-between;
+    font-size:12px;color:var(--dim2);letter-spacing:.08em;
+    transition:color .25s;
+  }
+  .card:hover .go{color:var(--c)}
+  .card .go .arrow{transition:transform .3s}
+  .card:hover .go .arrow{transform:translateX(5px)}
+
+  /* PC 客户端卡片：下载按钮 + 打开文件夹 */
+  .action-row{display:flex;flex-direction:column;gap:9px;margin-top:2px}
+  .btn-dl{
+    display:flex;align-items:center;justify-content:center;gap:9px;
+    padding:11px 14px;border-radius:9px;text-decoration:none;
+    background:color-mix(in srgb, var(--c) 16%, rgba(255,255,255,.02));
+    border:1px solid color-mix(in srgb, var(--c) 46%, transparent);
+    color:var(--c);font-size:13px;font-weight:500;letter-spacing:.03em;
+    transition:.25s ease;
+  }
+  .btn-dl .sz{font-size:11px;color:var(--dim2);font-weight:400;letter-spacing:0}
+  .btn-dl:hover{
+    background:var(--c);color:#06120f;border-color:var(--c);
+    box-shadow:0 0 26px color-mix(in srgb,var(--c) 40%, transparent);
+    transform:translateY(-1px);
+  }
+  .btn-dl:hover .sz{color:rgba(6,18,15,.65)}
+  .btn-dir{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:9px 12px;border-radius:8px;text-decoration:none;
+    font-size:11.5px;color:var(--dim2);
+    background:rgba(255,255,255,.03);
+    border:1px dashed rgba(255,255,255,.12);
+    transition:.22s;
+  }
+  .btn-dir b{
+    font-weight:500;color:var(--dim);
+    font-family:ui-monospace,Consolas,monospace;font-size:10.5px;
+  }
+  .btn-dir:hover{color:var(--ink);border-color:rgba(255,255,255,.24);background:rgba(255,255,255,.055)}
+  .card.pc{cursor:default}
+
+  /* 待添加占位 */
+  .slot{
+    border:1px dashed rgba(255,255,255,.1);
+    border-radius:16px;
+    display:grid;place-items:center;
+    min-height:250px;
+    background:radial-gradient(circle at 50% 40%, rgba(255,255,255,.03), transparent 70%);
+    color:var(--dim2);text-align:center;padding:26px;
+  }
+  .slot .plus{
+    font-family:var(--serif);font-size:34px;color:rgba(255,255,255,.16);
+    line-height:1;margin-bottom:14px;
+  }
+  .slot b{display:block;color:var(--dim);font-weight:500;font-size:13px;margin-bottom:8px}
+  .slot small{font-size:11.5px;line-height:1.9;color:var(--dim2)}
+  .slot code{
+    font-family:ui-monospace,Consolas,monospace;font-size:11px;
+    color:var(--cyan);background:rgba(116,240,216,.08);
+    padding:1px 5px;border-radius:4px;
+  }
+
+  footer{
+    margin-top:60px;padding:32px 0 56px;
+    border-top:1px solid var(--line);
+    display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;
+    font-size:12px;color:var(--dim2);letter-spacing:.04em;
+  }
+  footer .r{display:flex;gap:22px;flex-wrap:wrap}
+
+  /* ================== 动效层 ================== */
+
+  /* ① 跟随光标：巨型反色镜（difference 混合 + 柔边 + 彗星拖尾） */
+  .cursor{
+    position:fixed;left:0;top:0;z-index:0;
+    width:150px;height:150px;margin:-75px 0 0 -75px;
+    border-radius:50%;
+    background:#fff;
+    mix-blend-mode:difference;
+    pointer-events:none;
+    transform:translate3d(-240px,-240px,0);
+    opacity:0;
+    will-change:transform,width,height;
+    -webkit-mask-image:radial-gradient(circle at 50% 50%,#000 0 76%,rgba(0,0,0,.72) 83%,transparent 89%);
+            mask-image:radial-gradient(circle at 50% 50%,#000 0 76%,rgba(0,0,0,.72) 83%,transparent 89%);
+    transition:width .42s cubic-bezier(.34,1.4,.64,1),
+               height .42s cubic-bezier(.34,1.4,.64,1),
+               margin .42s cubic-bezier(.34,1.4,.64,1),
+               opacity .38s;
+  }
+  /* 拖尾小圆已移除 */
+
+  body.pointer-fine .cursor{opacity:1}
+  /* 反色光标开启时藏掉系统箭头，只留这团反色 */
+  body.pointer-fine, body.pointer-fine *{cursor:none!important}
+  /* 悬停在游戏卡片上：反色镜淡出，恢复正常指针 */
+  body.pointer-fine .card, body.pointer-fine .card *{cursor:auto!important}
+  body.pointer-fine .card a, body.pointer-fine .card button{cursor:pointer!important}
+  body.pointer-fine .cursor.off,
+  body.pointer-fine .cursor.out{opacity:0}
+  /* 进到卡片里就快点收起，别留一层灰雾 */
+  body.pointer-fine .cursor.off{transition:opacity .14s linear}
+  /* 碰到能点的东西：整块内容被挖开 */
+  .cursor.hot{
+    width:210px;height:210px;margin:-105px 0 0 -105px;
+  }
+  .cursor.down{width:96px;height:96px;margin:-48px 0 0 -48px}
+
+  /* ② 卡片光斑跟随鼠标 */
+  .card::after{
+    content:"";position:absolute;inset:0;z-index:3;pointer-events:none;
+    border-radius:inherit;
+    background:radial-gradient(340px circle at var(--mx,50%) var(--my,0%), rgba(255,255,255,.1), transparent 62%);
+    opacity:0;transition:opacity .4s;
+    mix-blend-mode:soft-light;
+  }
+  .card:hover::after{opacity:1}
+
+  /* ③ 弹性 hover：抬起，不做缩放（缩放会让整卡文字被重采样变糊） */
+  .card:hover{
+    transform:translateY(-9px);
+    transition:transform .45s cubic-bezier(.34,1.5,.64,1),border-color .35s,box-shadow .35s;
+  }
+
+  /* ④ 标题：乱码解码 + 擦除揭示
+     默认就是完整可见的，只有 JS 加上 .wipe 才播动画，脚本失效也不会白屏 */
+  h1 .line2{display:inline-block}
+  h1 .line2.wipe{animation:wipeIn 1.15s .45s cubic-bezier(.16,1,.3,1) forwards}
+  @keyframes wipeIn{
+    from{clip-path:inset(0 100% 0 0);opacity:.001}
+    to{clip-path:inset(0 0 0 0);opacity:1}
+  }
+  h1 #line1{font-variant-ligatures:none}
+
+  /* ⑤ 统计数字：等宽，滚动时不抖 */
+  .stat b{font-variant-numeric:tabular-nums}
+
+  /* ⑥ 磁吸按钮 */
+  .btn-random{
+    transition:background .25s ease,transform .35s cubic-bezier(.34,1.5,.64,1),box-shadow .3s;
+    will-change:transform;
+  }
+  .btn-random:hover{box-shadow:0 0 26px -8px rgba(247,198,107,.55)}
+  .btn-random:active{transform:scale(.96)!important}
+
+  /* ⑦ 滚动视差：背景光斑反向慢移 */
+  body::before{
+    transform:translate3d(0,calc(var(--scrollY,0) * -0.07px),0);
+    will-change:transform;
+  }
+
+  /* 三列布局时，末尾单出来的一张居中，不留空位 */
+  @media (min-width:1024px){
+    .grid > .card:last-child:nth-child(3n+1){grid-column:2}
+  }
+
+  @media (max-width:720px){
+    header.top{padding:44px 0 26px}
+    .stats{gap:26px;width:100%}
+    .stat b{font-size:24px}
+    .grid{grid-template-columns:1fr;gap:18px}
+    .lede{font-size:14px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important}
+    .card{opacity:1;transform:none}
+    h1 .line2.wipe{animation:none;clip-path:none;opacity:1}
+    .cursor{display:none}
+  }
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor" aria-hidden="true"></div>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <span class="dot"></span>
+      <span class="zh">i张TV</span>
+      <span>Fan&nbsp;Club</span>
+    </div>
+
+    <div class="hero">
+      <div>
+        <h1><span id="line1">张星星</span><br><span class="line2"><em>粉丝后援团</em></span></h1>
+        <p class="lede">六款网页作品打开就能玩；两款 PC 端作品打包成 zip，按下卡片上的下载按钮拿走，解压双击 exe 就能开。</p>
+      </div>
+      <div class="stats">
+        <div class="stat"><b>8</b><span>作品</span></div>
+        <div class="stat"><b>6</b><span>网页可玩</span></div>
+        <div class="stat"><b>2</b><span>PC 客户端</span></div>
+      </div>
+    </div>
+
+    <div class="bar">
+      <button class="chip on" data-filter="all">全部</button>
+      <button class="chip" data-filter="web">网页可玩</button>
+      <button class="chip" data-filter="pc">PC 客户端</button>
+      <span class="grow"></span>
+      <button class="btn-random" id="randomBtn"><span class="dice">◈</span> 随便来一局</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="grid" id="grid"></div>
+</main>
+
+<footer>
+  <div class="wrap" style="display:flex;justify-content:flex-end;gap:20px;flex-wrap:wrap;width:100%;padding:0">
+    <div class="r">
+      <span>全部离线可运行</span>
+      <span>建议用 Chrome / Edge 打开</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ===== 作品清单：加新游戏只要在这里加一条 =====
+   kind: 'web' 网页作品 / 'pc' 本地客户端
+   file: 网页写 html 相对路径；客户端写所在文件夹（点击打开目录，双击里面的 exe） */
+const GAMES = [
+  {
+    name:"星了个欣",
+    sub:"三张一样的 · 自动消",
+    en:"Xing Le Ge Xin",
+    file:"games/星了个欣/index.html",
+    cover:"covers/星了个欣.jpg",
+    color:"#74f0d8",
+    badge:"网页 · 三消",
+    kind:"web",
+    desc:"羊了个羊那套叠叠乐：牌全用张星星文件夹里的照片，暗着的说明被上面压住了点不动，亮着的随便点，进下方 7 个槽，凑齐三张同款立刻消掉。槽位满了就结束。",
+    tags:["三层叠放","7 槽位","鼠标点选"]
+  },
+  {
+    name:"合成张星星",
+    sub:"点哪落哪 · 11 级合成",
+    en:"Merge Zhang",
+    file:"games/合成张星星/index.html",
+    cover:"covers/合成张星星.jpg",
+    color:"#74f0d8",
+    badge:"网页 · 合成",
+    kind:"web",
+    desc:"和张星星文件夹里的 11 张照片做的合成大西瓜：点哪落哪，两个一样大的碰到一起就合成更大的一只，一路合到举海报那张。堆过危险线就结束。",
+    tags:["物理合成","11 级","手机可玩"]
+  },
+  {
+    name:"鹏城暗码",
+    sub:"J6 班的最后一课",
+    en:"Pengcheng Cipher",
+    file:"games/鹏城暗码.html",
+    cover:"covers/鹏城暗码.jpg",
+    color:"#ff6f92",
+    badge:"网页 · 恐怖",
+    kind:"web",
+    desc:"下课以后，福强校区的楼梯间好像长了一截。手电、纸条、走廊尽头那扇不该存在的门 —— 在自己的学校里找出一条出去的路。",
+    tags:["剧情解谜","多结局","键盘操作"]
+  },
+  {
+    name:"鹏城暗码 3D",
+    sub:"机房里的最后一晚",
+    en:"Pengcheng Cipher 3D",
+    file:"games/鹏城暗码3D/index.html",
+    cover:"covers/鹏城暗码3D.jpg",
+    color:"#c9a27a",
+    badge:"网页 · 3D",
+    kind:"web",
+    desc:"同一场噩梦换成第一人称。服务器还亮着红灯，椅子转过来的时候，人已经坐在那儿了 —— 用 Three.js 一砖一瓦搭出来的机房。",
+    tags:["第一人称","Three.js","氛围向"]
+  },
+  {
+    name:"精灵张可梦",
+    sub:"星海秘境 · 张可梦大师之路",
+    en:"Zhangmon",
+    file:"games/精灵张可梦/index.html",
+    cover:"covers/精灵张可梦.jpg",
+    color:"#ffd166",
+    badge:"网页 · 图鉴",
+    kind:"web",
+    desc:"把本人照片全部登记成张可梦：武魂真身、奶龙帝王、9+1 形态 —— 火系水系都有，招式还挺正经。收图鉴、打回合制，就图一乐。",
+    tags:["图鉴收集","回合制","梗含量"]
+  },
+  {
+    name:"张星星收藏集",
+    sub:"抽卡 · 17 张卡池",
+    en:"Star Collection",
+    file:"games/张星星抽卡/index.html",
+    cover:"covers/张星星收藏集.jpg",
+    color:"#e0c46a",
+    badge:"网页 · 抽卡",
+    kind:"web",
+    desc:"17 张卡池：大隐藏 1.5%、小隐藏 5%、常规 93.5%（14 款均摊）。单抽 20 蓝石、五连 100，没有保底 —— 想抽到「武魂真身」，只能多来几次。",
+    tags:["抽卡","稀有度","无保底"]
+  },
+  {
+    name:"张锦鑫大战僵尸",
+    sub:"PvZ 改版 · 完整关卡",
+    en:"Plants vs Zhang",
+    file:"games/张锦鑫大战僵尸/",
+    cover:"covers/张锦鑫大战僵尸.jpg",
+    color:"#8ee06a",
+    badge:"PC · 塔防",
+    kind:"pc",
+    exe:"张锦鑫大战僵尸.exe",
+    zip:"games/张锦鑫大战僵尸.zip",
+    zipSize:"39.6 MB",
+    desc:"草坪还是那块草坪，僵尸还是那群僵尸，只是向日葵和豌豆射手换成了自己人。基于 PvZ 引擎整体移植的完整改版。",
+    tags:["塔防","引擎改版","PC 端"]
+  },
+  {
+    name:"旮旯给木",
+    sub:"中职三年 · 可以自己选",
+    en:"Galgame",
+    file:"games/旮旯给木/",
+    cover:"covers/旮旯给木.jpg",
+    color:"#ff8f7a",
+    badge:"PC · 恋爱",
+    kind:"pc",
+    exe:"galagame.exe",
+    zip:"games/旮旯给木.zip",
+    zipSize:"43.1 MB",
+    desc:"从地铁站到校门，从教室到宿舍，一段能自己选的三年。老师线、同学线、六条好感度，还有一位猫学长。Ren'Py 做的完整视觉小说。",
+    tags:["视觉小说","多结局","Ren'Py"]
+  }
+];
+
+/* ===== 渲染 ===== */
+const grid = document.getElementById('grid');
+const io = new IntersectionObserver(es => {
+  es.forEach(e => { if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+},{threshold:.12});
+
+GAMES.forEach((g,i) => {
+  const isPc = g.kind === 'pc';
+  const card = document.createElement(isPc ? 'div' : 'a');
+  card.className = 'card' + (isPc ? ' pc' : '');
+  if(!isPc){
+    card.href = g.file;
+    card.target = '_blank';
+    card.rel = 'noopener';
+  }
+  card.dataset.cat = g.kind;
+  card.style.setProperty('--c', g.color);
+  card.style.transitionDelay = (i%6) * 60 + 'ms';
+
+  const actionBlock = isPc
+    ? `<div class="action-row">
+         <a class="btn-dl" href="${g.zip}" download>⬇ 下载客户端 zip<span class="sz">${g.zipSize}</span></a>
+         <div class="btn-dir"><span>解压后双击</span><b>${g.exe}</b></div>
+       </div>`
+    : '';
+
+  card.innerHTML = `
+    <div class="thumb">
+      <img src="${g.cover}" alt="${g.name} 封面" loading="lazy">
+      <div class="badge">${g.badge}</div>
+      <div class="play"><i>${isPc?'⬇':'▶'}</i> ${isPc?'下载客户端':'点开即玩'}</div>
+    </div>
+    <div class="body">
+      <div class="title-row">
+        <h2>${g.name}</h2>
+        <span class="en">${g.en}</span>
+      </div>
+      <p>${g.desc}</p>
+      <div class="tags">${g.tags.map(t=>`<span>${t}</span>`).join('')}</div>
+      ${actionBlock}
+      <div class="go"><span>${g.sub}</span><span class="arrow">→</span></div>
+    </div>`;
+  grid.appendChild(card);
+  io.observe(card);
+});
+
+/* ===== 动效开关 ===== */
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const finePointer = matchMedia('(pointer:fine)').matches;
+const EASE_OUT = 'cubic-bezier(.22,.7,.25,1)';
+const SPRING = 'cubic-bezier(.34,1.35,.64,1)';
+
+/* ===== ① 筛选：FLIP 布局动画，卡片滑到新位置 ===== */
+function applyFilter(f){
+  const cards = [...document.querySelectorAll('.card')];
+  const first = new Map();
+  cards.forEach(c => {
+    const r = c.getBoundingClientRect();
+    first.set(c, r.width ? r : null);
+  });
+  cards.forEach(c => {
+    c.style.display = (f === 'all' || c.dataset.cat === f) ? '' : 'none';
+  });
+  if(reduced) return;
+  requestAnimationFrame(() => {
+    cards.forEach(c => {
+      if(c.style.display === 'none') return;
+      const before = first.get(c);
+      const after = c.getBoundingClientRect();
+      if(before){
+        const dx = before.left - after.left;
+        const dy = before.top - after.top;
+        if(dx || dy){
+          c.animate(
+            [{transform:`translate(${dx}px,${dy}px)`},{transform:'translate(0,0)'}],
+            {duration:460, easing:EASE_OUT}
+          );
+        }
+      }else{
+        c.animate(
+          [{opacity:0, transform:'scale(.94) translateY(16px)'},{opacity:1, transform:'none'}],
+          {duration:430, easing:SPRING}
+        );
+      }
+    });
+  });
+}
+
+document.querySelectorAll('.chip').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.chip').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    applyFilter(btn.dataset.filter);
+  });
+});
+
+/* ===== ② 跟随光标：巨型反色镜 ===== */
+if(finePointer && !reduced){
+  document.body.classList.add('pointer-fine');
+  const ring = document.getElementById('cursor');
+  let cx = -240, cy = -240, tx = -240, ty = -240;
+  let raf = null;
+  let overCard = false;                               // 在游戏卡片上就收起反色镜
+  const loop = () => {
+    cx += (tx - cx) * 0.16;
+    cy += (ty - cy) * 0.16;
+    ring.style.transform = `translate3d(${cx.toFixed(2)}px,${cy.toFixed(2)}px,0)`;
+    raf = (Math.abs(tx-cx) + Math.abs(ty-cy) > 0.4) ? requestAnimationFrame(loop) : null;
+  };
+  addEventListener('pointermove', e => {
+    tx = e.clientX; ty = e.clientY;
+    if(!raf) raf = requestAnimationFrame(loop);
+    const hot = e.target instanceof Element && e.target.closest('a,button');
+    overCard = e.target instanceof Element && !!e.target.closest('.card');
+    ring.classList.toggle('hot', !!hot && !overCard);
+    ring.classList.toggle('off', overCard);
+  }, {passive:true});
+  addEventListener('pointerdown', () => ring.classList.add('down'));
+  addEventListener('pointerup', () => ring.classList.remove('down'));
+  document.addEventListener('mouseleave', () => ring.classList.add('out'));
+  document.addEventListener('mouseenter', () => ring.classList.remove('out'));
+
+  /* ===== ③ 卡片：光斑 + 封面轻微视差跟随 ===== */
+  grid.addEventListener('pointermove', e => {
+    const card = e.target instanceof Element ? e.target.closest('.card') : null;
+    if(!card) return;
+    const r = card.getBoundingClientRect();
+    const lx = e.clientX - r.left;
+    const ly = e.clientY - r.top;
+    card.style.setProperty('--mx', lx + 'px');
+    card.style.setProperty('--my', ly + 'px');
+    card.style.setProperty('--ix', Math.round((lx / r.width - .5) * 8) + 'px');
+    card.style.setProperty('--iy', Math.round((ly / r.height - .5) * 6) + 'px');
+  }, {passive:true});
+}
+
+/* ===== ④ 标题乱码解码 + 擦除揭示 ===== */
+if(!reduced){
+  const el = document.getElementById('line1');
+  const line2 = document.querySelector('h1 .line2');
+  if(line2) line2.classList.add('wipe');
+  if(el){
+    const final = el.textContent;
+    const pool = '粉丝星光盒子后援团站打卡追更考古弹幕抽卡觉醒';
+    const t0 = performance.now();
+    const dur = 1100;
+    const timer = setInterval(() => {
+      const p = Math.min(1, (performance.now() - t0) / dur);
+      let out = '';
+      for(let i = 0; i < final.length; i++){
+        const settle = 0.34 + (i / final.length) * 0.56;
+        out += (p >= settle) ? final[i] : pool[Math.floor(Math.random() * pool.length)];
+      }
+      el.textContent = out;
+      if(p >= 1){ clearInterval(timer); el.textContent = final; }
+    }, 45);
+    /* 兜底：无论动画跑没跑起来，1.3 秒后一定是正确文字 */
+    setTimeout(() => { clearInterval(timer); el.textContent = final; }, dur + 160);
+  }
+
+  /* ===== ⑤ 统计数字滚动 ===== */
+  document.querySelectorAll('.stat b').forEach(el => {
+    const target = parseInt(el.textContent, 10) || 0;
+    const t0 = performance.now();
+    const dur = 900;
+    (function run(now){
+      const p = Math.min(1, (now - t0) / dur);
+      el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3)));
+      if(p < 1) requestAnimationFrame(run);
+      else el.textContent = target;
+    })(t0);
+    setTimeout(() => { el.textContent = target; }, dur + 200);
+  });
+
+  /* ===== ⑥ 滚动视差 ===== */
+  let ticking = false;
+  addEventListener('scroll', () => {
+    if(ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      document.documentElement.style.setProperty('--scrollY', String(scrollY));
+      ticking = false;
+    });
+  }, {passive:true});
+}
+
+/* ===== ⑦ 磁吸按钮 + 随便来一局 ===== */
+const rndBtn = document.getElementById('randomBtn');
+if(finePointer && !reduced){
+  rndBtn.addEventListener('pointermove', e => {
+    const r = rndBtn.getBoundingClientRect();
+    const dx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2);
+    const dy = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
+    rndBtn.style.transform = `translate(${dx * 12}px,${dy * 7}px)`;
+  }, {passive:true});
+  rndBtn.addEventListener('pointerleave', () => { rndBtn.style.transform = ''; });
+}
+rndBtn.addEventListener('click', () => {
+  const web = GAMES.filter(g => g.kind === 'web');
+  const pick = web[Math.floor(Math.random() * web.length)];
+  window.open(pick.file, '_blank', 'noopener');
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>合成张星星</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;margin:0}
+  body{
+    background:radial-gradient(1100px 700px at 50% -12%, #141c28 0%, #07080b 58%) fixed, #07080b;
+    color:#eceff5;
+    font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    display:flex;align-items:center;justify-content:center;
+    overflow:hidden;user-select:none;
+  }
+  .app{
+    width:100%;max-width:448px;height:100%;
+    padding:12px 14px;display:flex;flex-direction:column;gap:9px;justify-content:center;
+  }
+  .top{display:flex;align-items:center;gap:10px}
+  .top .box{
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);
+    border-radius:12px;padding:7px 11px;display:flex;align-items:baseline;gap:7px;min-width:0;
+  }
+  .top .box span{font-size:11px;color:#8a93a4;letter-spacing:.08em}
+  .top .box b{font-size:19px;font-variant-numeric:tabular-nums;color:#74f0d8;font-weight:700}
+  .top .box.best b{color:#f7c66b}
+  .title{flex:1;min-width:0;line-height:1.15}
+  .title h1{margin:0;font-size:17px;font-weight:800;letter-spacing:.02em}
+  .title p{margin:2px 0 0;font-size:10.5px;color:#5c6575;letter-spacing:.1em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .btn{
+    appearance:none;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);
+    color:#dfe4ec;font-size:12px;padding:8px 12px;border-radius:10px;cursor:pointer;
+    font-family:inherit;transition:background .2s,border-color .2s,transform .2s;
+  }
+  .btn:hover{background:rgba(255,255,255,.1);border-color:rgba(116,240,216,.5)}
+  .btn:active{transform:scale(.96)}
+
+  .stage{
+    position:relative;margin:0 auto;
+    width:min(100%, 420px, calc((100dvh - 176px) * 420 / 640));
+    aspect-ratio:420/640;
+  }
+  canvas{
+    width:100%;height:100%;display:block;
+    border-radius:20px;
+    background:#0b1017;
+    box-shadow:0 22px 50px -22px rgba(0,0,0,.9), inset 0 0 0 1px rgba(255,255,255,.07);
+    touch-action:none;cursor:crosshair;
+  }
+  .next{
+    position:absolute;left:12px;top:12px;
+    display:flex;align-items:center;gap:8px;
+    padding:6px 10px 6px 6px;border-radius:999px;
+    background:rgba(7,10,14,.62);border:1px solid rgba(255,255,255,.1);
+    backdrop-filter:blur(6px);
+  }
+  .next img{width:30px;height:30px;border-radius:50%;object-fit:cover;border:1.5px solid rgba(116,240,216,.55)}
+  .next em{font-size:10px;color:#8a93a4;font-style:normal;letter-spacing:.06em}
+
+  .over{
+    position:absolute;inset:0;border-radius:20px;
+    background:rgba(6,8,12,.86);backdrop-filter:blur(8px);
+    display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+    text-align:center;padding:22px;
+  }
+  .over.on{display:flex;animation:fadeIn .35s ease}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  .over h2{margin:0 0 6px;font-size:21px;font-weight:800}
+  .over .big{font-size:44px;font-weight:800;color:#74f0d8;font-variant-numeric:tabular-nums;line-height:1}
+  .over p{margin:6px 0 12px;font-size:12px;color:#8a93a4;line-height:1.7}
+  .over .btn{padding:11px 22px;font-size:13px;border-color:rgba(116,240,216,.45);color:#bff7ea}
+
+  .tip{
+    text-align:center;font-size:11px;color:#5c6575;line-height:1.65;letter-spacing:.03em;
+  }
+  .tip b{color:#8a93a4;font-weight:600}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="title">
+      <h1>合成张星星</h1>
+      <p>SMALL ZHANG · 11 级合成</p>
+    </div>
+    <div class="box"><span>分数</span><b id="score">0</b></div>
+    <div class="box best"><span>最高</span><b id="best">0</b></div>
+    <button class="btn" id="restart">重开</button>
+  </div>
+
+  <div class="stage">
+    <canvas id="cv" width="420" height="640"></canvas>
+    <div class="next"><img id="nextImg" alt=""><em>下一个</em></div>
+    <div class="over" id="over">
+      <h2>堆到线外了</h2>
+      <div class="big" id="overScore">0</div>
+      <p id="overBest">最高 0</p>
+      <button class="btn" id="again">再来一局</button>
+    </div>
+  </div>
+
+  <div class="tip">点哪落哪 · 两个<b>一样大</b>的张星星碰到一起，就合成更大的一只</div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ---------- 基本参数 ---------- */
+const W = 420, H = 640;
+const FLOOR = H - 24;          // 地板线
+const SPAWN_Y = 58;            // 待落球高度
+const DANGER = 118;            // 危险线
+const RS   = [16, 19, 23, 27, 32, 38, 45, 53, 62, 72, 84];      // 11 级半径
+const CLR  = ['#7ce8c8','#5fdede','#7aa7ff','#9b8cff','#ff8fd0','#ff6f92','#f7c66b','#ffa45c','#8ee06a','#6ad1ff','#ffd166'];
+const TOPLV = 11;
+
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const $score = document.getElementById('score');
+const $best = document.getElementById('best');
+const $over = document.getElementById('over');
+const $overScore = document.getElementById('overScore');
+const $overBest = document.getElementById('overBest');
+const $nextImg = document.getElementById('nextImg');
+
+/* ---------- 图片与圆形缓存 ---------- */
+const IMGS = new Array(TOPLV + 1);
+const DISCS = new Array(TOPLV + 1);
+let loaded = 0;
+
+function buildDisc(lv){
+  const r = RS[lv - 1];
+  const pad = 4, size = Math.ceil((r + pad) * 2), dpr = 2;
+  const c = document.createElement('canvas');
+  c.width = size * dpr; c.height = size * dpr;
+  const g = c.getContext('2d');
+  g.scale(dpr, dpr);
+  const cx = size / 2, cy = size / 2;
+
+  g.save();
+  g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.closePath(); g.clip();
+  g.drawImage(IMGS[lv], cx - r, cy - r, r * 2, r * 2);
+  g.restore();
+
+  const vg = g.createRadialGradient(cx, cy - r * .2, r * .55, cx, cy, r);
+  vg.addColorStop(0, 'rgba(0,0,0,0)');
+  vg.addColorStop(1, 'rgba(0,0,0,.34)');
+  g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2);
+  g.fillStyle = vg; g.fill();
+
+  g.beginPath(); g.arc(cx, cy, r - 1.2, 0, Math.PI * 2);
+  g.lineWidth = 2.4; g.strokeStyle = CLR[lv - 1]; g.globalAlpha = .8; g.stroke();
+  g.globalAlpha = 1;
+
+  DISCS[lv] = { c, size };
+}
+
+for (let i = 1; i <= TOPLV; i++){
+  const im = new Image();
+  im.onload = () => { loaded++; buildDisc(i); };
+  im.onerror = () => { loaded++; };
+  im.src = i + '.jpg';
+  IMGS[i] = im;
+}
+
+/* ---------- 音效（可静默失败） ---------- */
+let actx = null;
+function beep(freq, dur, gain){
+  try{
+    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = actx.createOscillator(), gn = actx.createGain();
+    o.frequency.value = freq; o.type = 'sine';
+    gn.gain.value = gain;
+    gn.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + dur);
+    o.connect(gn); gn.connect(actx.destination);
+    o.start(); o.stop(actx.currentTime + dur);
+  }catch(e){}
+}
+
+/* ---------- 状态 ---------- */
+let balls = [];
+let score = 0;
+let best = 0;
+try{ best = +(localStorage.getItem('zxmx-best') || 0) || 0; }catch(e){}
+let cur = 1, next = 1;
+let px = W / 2;
+let cd = 0;
+let over = false;
+let parts = [];
+let hitFlash = 0;
+
+const ease = t => t * t * (3 - 2 * t);
+const rand = n => 1 + Math.floor(Math.random() * n);
+
+function makeBall(lv, x, y, vx, vy){
+  const r = RS[lv - 1];
+  return { lv, x, y, vx: vx || 0, vy: vy || 0, r, m: r * r, pop: 1, over: 0, dead: false };
+}
+
+function setNext(lv){
+  next = lv;
+  $nextImg.src = lv + '.jpg';
+}
+
+function reset(){
+  balls = []; parts = []; score = 0; cd = 0; over = false;
+  cur = rand(4); setNext(rand(4));
+  px = W / 2; hitFlash = 0;
+  $over.classList.remove('on');
+  $score.textContent = '0';
+}
+reset();
+$best.textContent = best;
+
+function addScore(n){
+  score += n;
+  $score.textContent = score;
+  if (score > best){
+    best = score;
+    $best.textContent = best;
+    try{ localStorage.setItem('zxmx-best', String(best)); }catch(e){}
+  }
+}
+
+function burst(x, y, r, color){
+  const n = 12 + Math.floor(r / 6);
+  for (let i = 0; i < n; i++){
+    const a = Math.random() * Math.PI * 2;
+    const sp = 1.2 + Math.random() * 3.2;
+    parts.push({
+      x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 1.4,
+      life: 1, r: 2 + Math.random() * 3.4, c: color
+    });
+  }
+}
+
+function merge(a, b){
+  a.dead = true; b.dead = true;
+  const lv = a.lv + 1;
+  const x = (a.x + b.x) / 2, y = (a.y + b.y) / 2;
+  const nb = makeBall(lv, x, y, (a.vx + b.vx) / 2, (a.vy + b.vy) / 2);
+  nb.pop = 0;
+  balls.push(nb);
+  addScore(lv * 3);
+  burst(x, y, RS[lv - 1], CLR[lv - 1]);
+  hitFlash = Math.max(hitFlash, Math.min(1, 0.25 + lv / 18));
+  beep(420 + lv * 46, 0.16, 0.055);
+  if (lv === TOPLV){
+    burst(x, y, 60, '#ffd166');
+    beep(880, 0.5, 0.09);
+  }
+}
+
+/* ---------- 物理 ---------- */
+function step(){
+  if (over) return;
+
+  if (cd > 0) cd--;
+
+  for (const b of balls){
+    b.vy += 0.62;
+    if (b.vy > 13) b.vy = 13;
+    b.vx *= 0.996;
+    b.x += b.vx;
+    b.y += b.vy;
+    if (b.pop < 1) b.pop = Math.min(1, b.pop + 0.075);
+  }
+
+  for (let it = 0; it < 4; it++){
+    const bs = balls;
+    for (let i = 0; i < bs.length; i++){
+      const a = bs[i];
+      if (a.dead) continue;
+      for (let j = i + 1; j < bs.length; j++){
+        const b = bs[j];
+        if (b.dead) continue;
+        let dx = b.x - a.x, dy = b.y - a.y;
+        let d = Math.sqrt(dx * dx + dy * dy);
+        const rr = a.r + b.r;
+        if (d >= rr) continue;
+        if (d < 0.02){ dx = Math.random() - .5; dy = Math.random() - .5; d = 0.02; }
+
+        const nx = dx / d, ny = dy / d, ov = rr - d;
+        const ta = a.m + b.m;
+        const wa = b.m / ta, wb = a.m / ta;
+        a.x -= nx * ov * wa * 0.95; a.y -= ny * ov * wa * 0.95;
+        b.x += nx * ov * wb * 0.95; b.y += ny * ov * wb * 0.95;
+
+        const vn = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+        if (vn < 0){
+          const e = 0.12;
+          const J = -(1 + e) * vn / (1 / a.m + 1 / b.m);
+          a.vx -= J * nx / a.m; a.vy -= J * ny / a.m;
+          b.vx += J * nx / b.m; b.vy += J * ny / b.m;
+
+          // 切向摩擦：让球愿意堆着而不是滑开
+          const tx = -ny, ty = nx;
+          const vt = (b.vx - a.vx) * tx + (b.vy - a.vy) * ty;
+          const Jt = -vt * 0.12;
+          a.vx -= Jt * tx / a.m; a.vy -= Jt * ty / a.m;
+          b.vx += Jt * tx / b.m; b.vy += Jt * ty / b.m;
+        }
+
+        if (a.lv === b.lv && a.lv < TOPLV && !a.dead && !b.dead) merge(a, b);
+      }
+    }
+
+    for (const b of bs){
+      if (b.dead) continue;
+      if (b.x - b.r < 0){ b.x = b.r; if (b.vx < 0) b.vx = -b.vx * .4; }
+      if (b.x + b.r > W){ b.x = W - b.r; if (b.vx > 0) b.vx = -b.vx * .4; }
+      if (b.y + b.r > FLOOR){ b.y = FLOOR - b.r; if (b.vy > 0) b.vy = -b.vy * .26; b.vx *= .9; }
+    }
+  }
+
+  balls = balls.filter(b => !b.dead);
+
+  /* 危险线判定：静止又越过线，撑 2.5 秒就结束 */
+  let danger = false;
+  for (const b of balls){
+    const top = b.y - b.r;
+    const slow = Math.abs(b.vy) < 2.6 && Math.abs(b.vx) < 2.6;
+    if (top < DANGER && slow) b.over += 1; else b.over = 0;
+    if (b.over > 130) danger = true;
+  }
+  if (danger) endGame();
+
+  /* 粒子 */
+  for (const p of parts){
+    p.vy += 0.14; p.x += p.vx; p.y += p.vy;
+    p.vx *= .96; p.vy *= .96;
+    p.life -= 0.032;
+  }
+  parts = parts.filter(p => p.life > 0);
+
+  if (hitFlash > 0) hitFlash -= 0.05;
+}
+
+function drop(){
+  if (over || cd > 0 || loaded < TOPLV) return;
+  const r = RS[cur - 1];
+  const x = Math.max(r + 2, Math.min(W - r - 2, px));
+  balls.push(makeBall(cur, x, SPAWN_Y, 0, 1.4));
+  cur = next;
+  setNext(rand(4));
+  cd = 26;
+  beep(250, 0.07, 0.03);
+}
+
+function endGame(){
+  if (over) return;
+  over = true;
+  $overScore.textContent = String(score);
+  $overBest.textContent = '最高 ' + best;
+  $over.classList.add('on');
+  beep(160, 0.5, 0.08);
+}
+
+/* ---------- 渲染 ---------- */
+function render(){
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#111a26');
+  g.addColorStop(.55, '#0a0f16');
+  g.addColorStop(1, '#06070a');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  /* 网格 */
+  ctx.strokeStyle = 'rgba(255,255,255,.03)';
+  ctx.lineWidth = 1;
+  for (let x = 28; x < W; x += 28){
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let y = 28; y < H; y += 28){
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  /* 地板 */
+  ctx.fillStyle = 'rgba(116,240,216,.07)';
+  ctx.fillRect(0, FLOOR, W, H - FLOOR);
+  ctx.strokeStyle = 'rgba(116,240,216,.28)';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, FLOOR + 1); ctx.lineTo(W, FLOOR + 1); ctx.stroke();
+
+  /* 危险线 */
+  ctx.save();
+  ctx.setLineDash([8, 8]);
+  ctx.strokeStyle = 'rgba(255,111,146,.42)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(0, DANGER); ctx.lineTo(W, DANGER); ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle = 'rgba(255,111,146,.5)';
+  ctx.font = '600 10px "Noto Sans SC","Microsoft YaHei",sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('危险线', W - 10, DANGER - 7);
+  ctx.textAlign = 'left';
+
+  /* 瞄准虚线 */
+  if (!over){
+    const r = RS[cur - 1];
+    const x = Math.max(r + 2, Math.min(W - r - 2, px));
+    ctx.save();
+    ctx.setLineDash([5, 9]);
+    ctx.strokeStyle = 'rgba(116,240,216,.22)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, SPAWN_Y); ctx.lineTo(x, FLOOR); ctx.stroke();
+    ctx.restore();
+  }
+
+  /* 球 */
+  for (const b of balls){
+    const d = DISCS[b.lv];
+    if (!d) continue;
+    const s = 0.55 + 0.45 * ease(b.pop);
+    const size = d.size * s;
+    ctx.drawImage(d.c, b.x - size / 2, b.y - size / 2, size, size);
+  }
+
+  /* 待落球 */
+  if (!over && loaded >= TOPLV){
+    const d = DISCS[cur];
+    if (d){
+      const s = (0.85 + 0.15 * Math.sin(Date.now() / 320)) * (cd > 0 ? 0.72 : 1);
+      const size = d.size * s;
+      const r = RS[cur - 1];
+      const x = Math.max(r + 2, Math.min(W - r - 2, px));
+      ctx.globalAlpha = cd > 0 ? .5 : 1;
+      ctx.drawImage(d.c, x - size / 2, SPAWN_Y - size / 2, size, size);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  /* 粒子 */
+  for (const p of parts){
+    ctx.globalAlpha = Math.max(0, p.life) * .9;
+    ctx.fillStyle = p.c;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r * (0.6 + p.life * 0.6), 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  /* 合成闪光 */
+  if (hitFlash > 0){
+    ctx.fillStyle = 'rgba(255,255,255,' + (hitFlash * 0.06).toFixed(3) + ')';
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  /* 未就绪提示 */
+  if (loaded < TOPLV){
+    ctx.fillStyle = 'rgba(236,239,245,.7)';
+    ctx.font = '600 13px "Noto Sans SC","Microsoft YaHei",sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('载入中 ' + loaded + '/' + TOPLV, W / 2, H / 2);
+    ctx.textAlign = 'left';
+  }
+}
+
+/* ---------- 主循环 ---------- */
+let acc = 0, last = 0;
+function loop(t){
+  if (!last) last = t;
+  let dt = (t - last) / 1000;
+  last = t;
+  if (dt > 0.12) dt = 0.12;
+  acc += dt;
+  const h = 1 / 60;
+  let guard = 0;
+  while (acc >= h && guard < 4){ step(); acc -= h; guard++; }
+  render();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* ---------- 输入 ---------- */
+function toX(e){
+  const r = cv.getBoundingClientRect();
+  return (e.clientX - r.left) / r.width * W;
+}
+
+cv.addEventListener('pointermove', e => { px = toX(e); }, { passive: true });
+cv.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  px = toX(e);
+  drop();
+}, { passive: false });
+cv.addEventListener('contextmenu', e => e.preventDefault());
+
+document.getElementById('restart').addEventListener('click', reset);
+document.getElementById('again').addEventListener('click', reset);
+
+/* 键盘：左右移动 + 空格落球 */
+addEventListener('keydown', e => {
+  if (e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); drop(); }
+  if (e.key === 'ArrowLeft') px = Math.max(0, px - 24);
+  if (e.key === 'ArrowRight') px = Math.min(W, px + 24);
+  if (e.key === 'r' || e.key === 'R') reset();
+});
+
+/* 首屏尺寸校正（高分屏） */
+(function fitDPR(){
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = W * dpr;
+  cv.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+})();
+
+/* 调试钩子 */
+window.__dbg = () => {
+  let min = 1e9, pair = null;
+  for (let i = 0; i < balls.length; i++){
+    for (let j = i + 1; j < balls.length; j++){
+      const a = balls[i], b = balls[j];
+      const gap = Math.hypot(a.x - b.x, a.y - b.y) - (a.r + b.r);
+      if (gap < min){ min = gap; pair = [a.lv, b.lv, +a.x.toFixed(0), +a.y.toFixed(0), +b.x.toFixed(0), +b.y.toFixed(0)]; }
+    }
+  }
+  return { n: balls.length, worstGap: +min.toFixed(2), pair, over };
+};
+
+})();
+</script>
+</body>
+</html>

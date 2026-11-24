@@ -516,11 +516,11 @@
     <div class="hero">
       <div>
         <h1><span id="line1">张星星</span><br><span class="line2"><em>粉丝后援团</em></span></h1>
-        <p class="lede">六款网页作品打开就能玩；两款 PC 端作品打包成 zip，按下卡片上的下载按钮拿走，解压双击 exe 就能开。</p>
+        <p class="lede">七款网页作品打开就能玩；两款 PC 端作品打包成 zip，按下卡片上的下载按钮拿走，解压双击 exe 就能开。</p>
       </div>
       <div class="stats">
-        <div class="stat"><b>8</b><span>作品</span></div>
-        <div class="stat"><b>6</b><span>网页可玩</span></div>
+        <div class="stat"><b>9</b><span>作品</span></div>
+        <div class="stat"><b>7</b><span>网页可玩</span></div>
         <div class="stat"><b>2</b><span>PC 客户端</span></div>
       </div>
     </div>
@@ -553,6 +553,18 @@
    kind: 'web' 网页作品 / 'pc' 本地客户端
    file: 网页写 html 相对路径；客户端写所在文件夹（点击打开目录，双击里面的 exe） */
 const GAMES = [
+  {
+    name:"保卫张星星",
+    sub:"塔防 · 十波守基地",
+    en:"Defend Zhang",
+    file:"games/保卫张星星/index.html",
+    cover:"covers/保卫张星星.jpg",
+    color:"#8fc6ff",
+    badge:"网页 · 塔防",
+    kind:"web",
+    desc:"黑化的张星星沿着走廊成排冲过来，在路边摆塔拦住：墨镜豌豆单点、奶龙冰塔减速、天使重炮群伤。十波打完，右边基地还站着就算赢。",
+    tags:["路径塔防","10 波","照片拆件"]
+  },
   {
     name:"星了个欣",
     sub:"三张一样的 · 自动消",
@@ -679,7 +691,7 @@ GAMES.forEach((g,i) => {
   const actionBlock = isPc
     ? `<div class="action-row">
          <a class="btn-dl" href="${g.zip}" download>⬇ 下载客户端 zip<span class="sz">${g.zipSize}</span></a>
-         <div class="btn-dir"><span>解压后双击</span><b>${g.exe}</b></div>
+         <a class="btn-dir" href="${g.file}" target="_blank" rel="noopener"><span>已在本机？打开文件夹</span><b>${g.exe}</b></a>
        </div>`
     : '';
 

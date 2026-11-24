@@ -120,13 +120,14 @@
     <div class="stat">生命 <b id="hLife">20</b></div>
     <div class="acts">
       <button class="primary" id="btnWave">开始第 1 波</button>
+      <button class="primary" id="btnAuto">自动开波</button>
       <button id="btnSpeed">×1</button>
       <button id="btnPause">暂停</button>
     </div>
   </header>
 
   <div class="stage"><canvas id="cv" width="960" height="640"></canvas></div>
-  <div class="hint">点虚线空位建塔 · 点塔升级或卖掉 · 点灰色杂物堆锁定，塔会优先砸它 → 拿金币 + 多一个空位 · 无尽模式，守到守不住为止</div>
+  <div class="hint">点虚线空位建塔 · 点塔升级或卖掉 · 点灰色杂物堆锁定，塔会优先砸它 → 拿金币 + 多一个空位 · 默认每波自动连开，想自己控节奏就按「自动开波」关掉</div>
 </div>
 
 <div class="panel" id="panel">
@@ -231,6 +232,7 @@ const ALL_IMGS = [
 /* 状态 */
 const G = {
   coins:300, life:20, wave:0, running:false, paused:false, speed:1,
+  autoWave:true, nextT:0,
   enemies:[], towers:[], shots:[], parts:[], spawnQ:[], spawnT:0,
   obstacles:[], lockRock:null, rocksCleared:0, toast:null,
   baseShake:0, t:0, over:false, killed:0
@@ -254,10 +256,10 @@ function reset(){
   G.coins = 300; G.life = 20; G.wave = 0; G.running = false; G.paused = false; G.speed = 1;
   G.enemies = []; G.towers = []; G.shots = []; G.parts = []; G.spawnQ = []; G.spawnT = 0;
   G.baseShake = 0; G.over = false; G.killed = 0;
+  G.nextT = G.autoWave ? 2.6 : 0;
   buildObstacles();
   syncHud(); closePanel(); document.getElementById('over').classList.remove('on');
-  document.getElementById('btnWave').disabled = false;
-  document.getElementById('btnWave').textContent = '开始第 1 波';
+  setWaveBtn('开始第 1 波', false);
   document.getElementById('btnSpeed').textContent = '×1';
   document.getElementById('btnPause').textContent = '暂停';
 }
@@ -530,6 +532,15 @@ function render(){
 const btnWave = document.getElementById('btnWave');
 const btnSpeed = document.getElementById('btnSpeed');
 const btnPause = document.getElementById('btnPause');
+const btnAuto = document.getElementById('btnAuto');
+let waveBtnCache = '';
+function setWaveBtn(txt, dis){
+  const key = txt + '|' + (dis ? 1 : 0);
+  if(waveBtnCache === key) return;
+  waveBtnCache = key;
+  btnWave.textContent = txt;
+  btnWave.disabled = !!dis;
+}
 
 function spawnEnemy(s){
   const e = {
@@ -563,8 +574,7 @@ function startWave(){
   G.spawnQ = q;
   G.spawnT = 0.4;
   G.running = true;
-  btnWave.disabled = true;
-  btnWave.textContent = '第 ' + G.wave + ' 波进行中';
+  setWaveBtn('第 ' + G.wave + ' 波进行中', true);
 }
 
 function findTarget(t){
@@ -638,8 +648,8 @@ function hitShot(s){
 }
 
 function gameOver(){
-  G.over = true; G.running = false;
-  btnWave.disabled = true;
+  G.over = true; G.running = false; G.nextT = 0;
+  setWaveBtn('本局结束', true);
   document.getElementById('overTitle').textContent = '基地被攻破了';
   document.getElementById('overText').innerHTML =
     '无尽模式守到第 <b>' + G.wave + '</b> 波，击杀 ' + G.killed + ' 只，拆掉 ' + G.rocksCleared + ' 个杂物堆。';
@@ -651,6 +661,17 @@ function update(dt){
   if(G.baseShake > 0) G.baseShake = Math.max(0, G.baseShake - dt*3.5);
   for(const o of G.obstacles){ if(o.hitT > 0) o.hitT = Math.max(0, o.hitT - dt*3.2); }
   if(G.toast){ G.toast.age += dt; if(G.toast.age > 1.4) G.toast = null; }
+
+  /* 自动连开：波间倒计时 */
+  if(!G.running && !G.over && G.autoWave && G.nextT > 0){
+    G.nextT -= dt;
+    if(G.nextT <= 0){
+      G.nextT = 0;
+      startWave();
+    }else{
+      setWaveBtn('下一波 ' + (Math.ceil(G.nextT * 10) / 10).toFixed(1) + 's', false);
+    }
+  }
 
   if(G.spawnQ.length){
     G.spawnT -= dt;
@@ -710,8 +731,12 @@ function update(dt){
   if(G.running && !G.spawnQ.length && !G.enemies.length && !G.over){
     G.running = false;
     G.coins += 50 + G.wave * 10; syncHud();
-    btnWave.disabled = false;
-    btnWave.textContent = '开始第 ' + (G.wave+1) + ' 波';
+    if(G.autoWave){
+      G.nextT = 2.2;
+      setWaveBtn('下一波 2.2s', false);
+    }else{
+      setWaveBtn('开始第 ' + (G.wave+1) + ' 波', false);
+    }
   }
 }
 
@@ -840,7 +865,21 @@ cv.addEventListener('pointerdown', ev=>{
   closePanel();
 });
 
-btnWave.addEventListener('click', startWave);
+btnWave.addEventListener('click', ()=>{
+  G.nextT = 0;
+  startWave();
+});
+btnAuto.addEventListener('click', ()=>{
+  G.autoWave = !G.autoWave;
+  btnAuto.textContent = G.autoWave ? '自动开波' : '手动开波';
+  btnAuto.classList.toggle('primary', G.autoWave);
+  if(G.autoWave){
+    if(!G.running && !G.over) G.nextT = 2.2;
+  }else{
+    G.nextT = 0;
+    if(!G.running && !G.over) setWaveBtn('开始第 ' + (G.wave+1) + ' 波', false);
+  }
+});
 btnSpeed.addEventListener('click', ()=>{
   G.speed = G.speed === 1 ? 2 : 1;
   btnSpeed.textContent = '×' + G.speed;
@@ -859,10 +898,10 @@ addEventListener('keydown', e=>{
 });
 
 /* ================= 启动 ================= */
-Promise.all(ALL_IMGS.map(([k,src]) => loadImg(k, src))).then(()=>{
-  reset();
-  requestAnimationFrame(frame);
-});
+/* 先出画面（背景/路径/坑位/基地），照片慢慢补上来，不等全部加载 */
+reset();
+requestAnimationFrame(frame);
+ALL_IMGS.forEach(([k, src]) => loadImg(k, src));
 </script>
 </body>
 </html>

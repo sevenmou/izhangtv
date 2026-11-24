@@ -115,8 +115,8 @@
   <header>
     <div class="brand"><span class="dot"></span><b>保卫张星星</b><span>DEFEND ZHANG</span></div>
     <div class="grow"></div>
-    <div class="stat">金币 <b id="hCoins">240</b></div>
-    <div class="stat">波次 <b id="hWave">0</b>/10</div>
+    <div class="stat">金币 <b id="hCoins">300</b></div>
+    <div class="stat">第 <b id="hWave">0</b> 波</div>
     <div class="stat">生命 <b id="hLife">20</b></div>
     <div class="acts">
       <button class="primary" id="btnWave">开始第 1 波</button>
@@ -126,7 +126,7 @@
   </header>
 
   <div class="stage"><canvas id="cv" width="960" height="640"></canvas></div>
-  <div class="hint">点虚线空位建塔 · 点已有塔可升级或卖掉 · 别让黑化的张星星走到右边</div>
+  <div class="hint">点虚线空位建塔 · 点塔升级或卖掉 · 点灰色杂物堆锁定，塔会优先砸它 → 拿金币 + 多一个空位 · 无尽模式，守到守不住为止</div>
 </div>
 
 <div class="panel" id="panel">
@@ -176,10 +176,20 @@ function pointAt(d){
   return {x:PATH[PATH.length-1][0], y:PATH[PATH.length-1][1]};
 }
 
-/* 6 个建造点 */
+/* 12 个建造点：带 locked 的初始被杂物堆压着，砸开才可用 */
 const SPOTS = [
-  {x:120, y:255}, {x:352, y:256}, {x:352, y:530},
-  {x:512, y:530}, {x:726, y:318}, {x:762, y:78}
+  {x:70, y:330},  {x:120, y:255}, {x:352, y:256}, {x:500, y:255},
+  {x:390, y:340}, {x:352, y:530}, {x:460, y:530}, {x:620, y:530},
+  {x:726, y:318}, {x:690, y:60},  {x:860, y:330}, {x:845, y:500}
+];
+
+/* 杂物堆：压在某个坑位上，砸掉 → 金币 + 解锁该坑位 */
+const ROCK_DEF = [
+  {spot:0,  img:'rock1', hp:240, reward:70},
+  {spot:3,  img:'rock2', hp:300, reward:80},
+  {spot:6,  img:'rock3', hp:320, reward:85},
+  {spot:9,  img:'rock1', hp:340, reward:90},
+  {spot:11, img:'rock2', hp:420, reward:110}
 ];
 
 const BASE = {x:905, y:180, r:46};
@@ -192,19 +202,16 @@ const TOWERS = {
 };
 const UPGRADE = [1, .8, 1.15];   // 各级升级价 = cost * 系数
 
-/* 波次 */
-const WAVES = [
-  {n:8,  gap:.85, hp:42,  spd:52},
-  {n:10, gap:.8,  hp:54,  spd:54},
-  {n:12, gap:.75, hp:70,  spd:56},
-  {n:12, gap:.72, hp:88,  spd:58, elite:2},
-  {n:14, gap:.68, hp:108, spd:60, elite:3},
-  {n:15, gap:.64, hp:132, spd:62, elite:4},
-  {n:16, gap:.6,  hp:158, spd:64, elite:5},
-  {n:16, gap:.56, hp:184, spd:66, elite:6},
-  {n:18, gap:.52, hp:212, spd:66, elite:8},
-  {n:18, gap:.5,  hp:244, spd:68, elite:9, boss:1}
-];
+/* 无尽波次：越往后越密越快越硬，没有终点 */
+function waveCfg(w){
+  return {
+    n:   Math.min(33, 8 + Math.floor((w-1)*1.15)),
+    hp:  Math.round(42 * Math.pow(1.105, w-1) + w*12),
+    spd: Math.min(106, 52 + w*1.5),
+    gap: Math.max(.34, .85 - (w-1)*.016),
+    boss: w % 5 === 0
+  };
+}
 
 /* 图片 */
 const IMG = {};
@@ -217,22 +224,40 @@ function loadImg(key, src){
   });
 }
 const ALL_IMGS = [
-  ['base','base.png'],['pea','tower1.png'],['ice','tower2.png'],['boom','tower3.png']
+  ['base','base.png'],['pea','tower1.png'],['ice','tower2.png'],['boom','tower3.png'],
+  ['rock1','rock1.png'],['rock2','rock2.png'],['rock3','rock3.png']
 ];
 
 /* 状态 */
 const G = {
-  coins:240, life:20, wave:0, running:false, paused:false, speed:1,
+  coins:300, life:20, wave:0, running:false, paused:false, speed:1,
   enemies:[], towers:[], shots:[], parts:[], spawnQ:[], spawnT:0,
+  obstacles:[], lockRock:null, rocksCleared:0, toast:null,
   baseShake:0, t:0, over:false, killed:0
 };
 
+function buildObstacles(){
+  SPOTS.forEach(s=> s.locked = false);
+  G.obstacles = ROCK_DEF.map((d,i)=>{
+    const sp = SPOTS[d.spot];
+    sp.locked = true;
+    return {x:sp.x, y:sp.y, spot:d.spot, img:d.img, r:34,
+            hp:d.hp, maxHp:d.hp, reward:d.reward, hitT:0,
+            isRock:true, dead:false, locked:false, id:i};
+  });
+  G.lockRock = null;
+  G.rocksCleared = 0;
+  G.toast = null;
+}
+
 function reset(){
-  G.coins = 240; G.life = 20; G.wave = 0; G.running = false; G.paused = false; G.speed = 1;
+  G.coins = 300; G.life = 20; G.wave = 0; G.running = false; G.paused = false; G.speed = 1;
   G.enemies = []; G.towers = []; G.shots = []; G.parts = []; G.spawnQ = []; G.spawnT = 0;
   G.baseShake = 0; G.over = false; G.killed = 0;
+  buildObstacles();
   syncHud(); closePanel(); document.getElementById('over').classList.remove('on');
   document.getElementById('btnWave').disabled = false;
+  document.getElementById('btnWave').textContent = '开始第 1 波';
   document.getElementById('btnSpeed').textContent = '×1';
   document.getElementById('btnPause').textContent = '暂停';
 }
@@ -400,6 +425,7 @@ function drawParts(){
 
 function drawSpots(){
   for(const s of SPOTS){
+    if(s.locked) continue;
     const t = G.towers.find(t=>t.sx===s.x && t.sy===s.y);
     if(t) continue;
     ctx.save();
@@ -414,14 +440,85 @@ function drawSpots(){
   ctx.textAlign='left';
 }
 
+/* 杂物堆：点一下锁定，塔优先砸它，砸开 = 金币 + 解锁坑位 */
+function drawObstacles(){
+  for(const o of G.obstacles){
+    if(o.dead) continue;
+    const jit = o.hitT > 0 ? (Math.random()-.5)*9*o.hitT : 0;
+    const cx2 = o.x + jit;
+
+    ctx.beginPath();
+    ctx.ellipse(o.x, o.y + o.r*0.94, o.r*0.94, o.r*0.3, 0, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fill();
+
+    circle(cx2 + o.r*0.44, o.y + o.r*0.08, o.r*0.6, 'rgba(45,51,64,.96)', 'rgba(152,164,188,.28)', 1.6);
+    circle(cx2 - o.r*0.46, o.y + o.r*0.14, o.r*0.54, 'rgba(37,43,56,.96)', 'rgba(152,164,188,.24)', 1.6);
+    circle(cx2, o.y, o.r*0.92, 'rgba(52,58,74,.97)', 'rgba(152,164,188,.34)', 2);
+    drawSticker(o.img, cx2, o.y - 2, o.r*1.22);
+
+    /* 裂缝 */
+    ctx.strokeStyle = 'rgba(12,15,22,.55)'; ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(cx2-o.r*.3, o.y-o.r*.42);
+    ctx.lineTo(cx2-o.r*.06, o.y-o.r*.1);
+    ctx.lineTo(cx2-o.r*.26, o.y+o.r*.2);
+    ctx.stroke();
+
+    if(o.locked){
+      const pl = 1 + Math.sin(G.t*4)*0.06;
+      const covered = G.towers.some(t => Math.hypot(t.x-o.x, t.y-o.y) <= t.range + o.r);
+      circle(cx2, o.y, (o.r+8)*pl, null, covered ? 'rgba(255,80,110,.95)' : 'rgba(255,180,90,.9)', 2);
+      ctx.strokeStyle = 'rgba(255,80,110,.9)'; ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(cx2-(o.r+14), o.y); ctx.lineTo(cx2-(o.r+4), o.y);
+      ctx.moveTo(cx2+(o.r+4), o.y);  ctx.lineTo(cx2+(o.r+14), o.y);
+      ctx.moveTo(cx2, o.y-(o.r+14)); ctx.lineTo(cx2, o.y-(o.r+4));
+      ctx.moveTo(cx2, o.y+(o.r+4));  ctx.lineTo(cx2, o.y+(o.r+14));
+      ctx.stroke();
+      ctx.fillStyle = covered ? 'rgba(255,80,110,.95)' : 'rgba(255,190,110,.95)';
+      ctx.font = '700 11px sans-serif'; ctx.textAlign='center';
+      ctx.fillText(covered ? '锁定中' : '旁边没塔，打不到', cx2, o.y + o.r + 20);
+      ctx.textAlign='left';
+    }else{
+      const a = 0.42 + Math.sin(G.t*2.6 + o.id)*0.22;
+      ctx.fillStyle = 'rgba(255,209,102,' + a.toFixed(2) + ')';
+      ctx.font = '600 10px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('点我砸', cx2, o.y + o.r + 14);
+      ctx.textAlign='left';
+    }
+
+    if(o.hp < o.maxHp){
+      const bw = o.r*1.9, bh = 3.5, bx = o.x-bw/2, by = o.y - o.r - 10;
+      ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(bx-1, by-1, bw+2, bh+2);
+      const p = Math.max(0, o.hp/o.maxHp);
+      ctx.fillStyle = '#ffb36b';
+      ctx.fillRect(bx, by, bw*p, bh);
+    }
+  }
+}
+
+function drawToast(){
+  if(!G.toast) return;
+  const k = 1 - G.toast.age/1.4;
+  if(k <= 0) return;
+  ctx.globalAlpha = Math.max(0, Math.min(1, k*1.3));
+  ctx.fillStyle = '#ffd166';
+  ctx.font = '700 15px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(G.toast.text, G.toast.x, G.toast.y - G.toast.age*30);
+  ctx.textAlign='left';
+  ctx.globalAlpha = 1;
+}
+
 function render(){
   drawBg();
   drawSpots();
+  drawObstacles();
   drawBase();
   for(const t of G.towers) drawTower(t);
   for(const e of G.enemies) drawEnemy(e);
   drawShots();
   drawParts();
+  drawToast();
   if(G.paused && G.running){
     ctx.fillStyle = 'rgba(4,6,9,.5)'; ctx.fillRect(0,0,W,H);
     ctx.fillStyle = '#eaf0f4'; ctx.font = '600 20px sans-serif'; ctx.textAlign='center';
@@ -446,21 +543,21 @@ function spawnEnemy(s){
 }
 
 function startWave(){
-  if(G.running || G.over || G.wave >= WAVES.length) return;
-  const w = WAVES[G.wave];
+  if(G.running || G.over) return;
+  const w = waveCfg(G.wave + 1);
   G.wave++;
   syncHud();
   const q = [];
-  const eliteEvery = w.elite ? Math.max(3, Math.round(w.n / w.elite)) : 0;
+  const eliteEvery = G.wave >= 5 ? 5 : 0;
   for(let i=0;i<w.n;i++){
     const elite = eliteEvery && (i % eliteEvery === eliteEvery-1);
     const boss = w.boss && i === w.n-1;
-    let hp = w.hp * (1 + i*0.03) * (elite ? 2.5 : 1) * (boss ? 7 : 1);
+    let hp = w.hp * (1 + i*0.03) * (elite ? 2.4 : 1) * (boss ? 6 : 1);
     hp = Math.round(hp);
     q.push({
-      hp, spd: w.spd * (elite ? .88 : 1) * (boss ? .7 : 1),
+      hp, spd: w.spd * (elite ? .9 : 1) * (boss ? .72 : 1),
       elite, boss, gap: w.gap,
-      reward: Math.max(7, Math.round(hp * (boss ? .14 : .2)))
+      reward: boss ? 70 : (elite ? 26 : 10)
     });
   }
   G.spawnQ = q;
@@ -471,6 +568,8 @@ function startWave(){
 }
 
 function findTarget(t){
+  const o = G.lockRock;
+  if(o && !o.dead && Math.hypot(o.x-t.x, o.y-t.y) <= t.range + o.r) return o;
   let best = null, bestD = -1;
   for(const e of G.enemies){
     if(e.dead) continue;
@@ -499,7 +598,30 @@ function damage(e, d){
   }
 }
 
+function damageRock(o, d){
+  if(o.dead) return;
+  o.hp -= d; o.hitT = 1;
+  if(o.hp <= 0){
+    o.dead = true;
+    o.hp = 0;
+    G.coins += o.reward;
+    G.rocksCleared++;
+    SPOTS[o.spot].locked = false;
+    if(G.lockRock === o) G.lockRock = null;
+    G.toast = {text:'+' + o.reward + ' 金币 · 空位解锁', x:o.x, y:o.y - 40, age:0};
+    addParts(o.x, o.y, 22, '#ffd166', 4.6);
+    addParts(o.x, o.y, 14, '#8a94a2', 4);
+    syncHud();
+  }
+}
+
 function hitShot(s){
+  const tg = s.tgt;
+  if(tg && tg.isRock){
+    if(!tg.dead) damageRock(tg, s.dmg);
+    addParts(s.x, s.y, 8, '#c8d2e0', 2.8);
+    return;
+  }
   if(s.kind === 'boom'){
     for(const e of G.enemies){
       if(!e.dead && Math.hypot(e.x-s.x, e.y-s.y) <= s.splash) damage(e, s.dmg);
@@ -515,19 +637,20 @@ function hitShot(s){
   }
 }
 
-function gameOver(win){
+function gameOver(){
   G.over = true; G.running = false;
   btnWave.disabled = true;
-  document.getElementById('overTitle').textContent = win ? '守住了！' : '基地被攻破了';
-  document.getElementById('overText').innerHTML = win
-    ? '10 波黑化张星星全部清空，击杀 ' + G.killed + ' 只，剩余生命 ' + G.life + '。'
-    : '打到第 ' + G.wave + ' 波，击杀 ' + G.killed + ' 只。再摆一次塔试试。';
+  document.getElementById('overTitle').textContent = '基地被攻破了';
+  document.getElementById('overText').innerHTML =
+    '无尽模式守到第 <b>' + G.wave + '</b> 波，击杀 ' + G.killed + ' 只，拆掉 ' + G.rocksCleared + ' 个杂物堆。';
   document.getElementById('over').classList.add('on');
 }
 
 function update(dt){
   G.t += dt;
   if(G.baseShake > 0) G.baseShake = Math.max(0, G.baseShake - dt*3.5);
+  for(const o of G.obstacles){ if(o.hitT > 0) o.hitT = Math.max(0, o.hitT - dt*3.2); }
+  if(G.toast){ G.toast.age += dt; if(G.toast.age > 1.4) G.toast = null; }
 
   if(G.spawnQ.length){
     G.spawnT -= dt;
@@ -551,7 +674,7 @@ function update(dt){
       G.baseShake = 1;
       addParts(BASE.x, BASE.y, 14, '#ff6f92', 4.5);
       syncHud();
-      if(G.life <= 0){ G.life = 0; syncHud(); gameOver(false); return; }
+      if(G.life <= 0){ G.life = 0; syncHud(); gameOver(); return; }
     }
   }
   G.enemies = G.enemies.filter(e=>!e.dead);
@@ -586,12 +709,9 @@ function update(dt){
 
   if(G.running && !G.spawnQ.length && !G.enemies.length && !G.over){
     G.running = false;
-    G.coins += 55; syncHud();
-    if(G.wave >= WAVES.length){ gameOver(true); }
-    else{
-      btnWave.disabled = false;
-      btnWave.textContent = '开始第 ' + (G.wave+1) + ' 波';
-    }
+    G.coins += 50 + G.wave * 10; syncHud();
+    btnWave.disabled = false;
+    btnWave.textContent = '开始第 ' + (G.wave+1) + ' 波';
   }
 }
 
@@ -698,7 +818,22 @@ cv.addEventListener('pointerdown', ev=>{
   for(const t of G.towers){
     if(Math.hypot(t.x-x, (t.y+4)-y) < 34){ openTowerPanel(t); return; }
   }
+  for(const o of G.obstacles){
+    if(!o.dead && Math.hypot(o.x-x, o.y-y) < o.r + 10){
+      if(G.lockRock === o){
+        o.locked = false; G.lockRock = null;
+        G.toast = {text:'取消锁定', x:o.x, y:o.y - 40, age:0};
+      }else{
+        if(G.lockRock) G.lockRock.locked = false;
+        G.lockRock = o; o.locked = true;
+        G.toast = {text:'塔来砸这堆了', x:o.x, y:o.y - 40, age:0};
+      }
+      closePanel();
+      return;
+    }
+  }
   for(const s of SPOTS){
+    if(s.locked) continue;
     const occupied = G.towers.some(t=>t.sx===s.x && t.sy===s.y);
     if(!occupied && Math.hypot(s.x-x, (s.y+6)-y) < 34){ openSpotPanel(s); return; }
   }

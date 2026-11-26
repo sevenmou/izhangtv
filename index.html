@@ -302,7 +302,13 @@
     display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;
     font-size:12px;color:var(--dim2);letter-spacing:.04em;
   }
-  footer .r{display:flex;gap:22px;flex-wrap:wrap}
+  footer .r{display:flex;gap:22px;flex-wrap:wrap;align-items:center}
+  footer .sub-link{
+    color:var(--dim);text-decoration:none;
+    border-bottom:1px solid rgba(116,240,216,.28);
+    padding-bottom:2px;transition:color .2s ease,border-color .2s ease;
+  }
+  footer .sub-link:hover{color:var(--cyan);border-color:var(--cyan)}
 
   /* ================== 动效层 ================== */
 
@@ -542,6 +548,7 @@
 <footer>
   <div class="wrap" style="display:flex;justify-content:flex-end;gap:20px;flex-wrap:wrap;width:100%;padding:0">
     <div class="r">
+      <a href="./submit.html" class="sub-link">投稿你的图 ↗</a>
       <span>全部离线可运行</span>
       <span>建议用 Chrome / Edge 打开</span>
     </div>
